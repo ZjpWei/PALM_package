@@ -9,7 +9,6 @@
 #' the order of samples should be matched with the order in rel.abd used in the "palm.null.model" function.
 #'
 #' @return Output a list with each component for a study. The component includes the following elements.
-#' \item{ref}{Reference feature ID for the study.}
 #' \item{est}{A matrix contains the relative-abundance association coefficient estimates for the study. The row names are microbial feature IDs
 #' and the column names are the covariates of interest IDs.}
 #' \item{var}{A matrix contains the variances of the relative-abundance association coefficient estimates for the study.
@@ -21,7 +20,7 @@
 #' \code{\link{palm.test}},
 #' \code{\link{palm}}
 #'
-#' @import dplyr
+#' @import dplyr Rcpp
 #' @export
 #'
 #' @examples

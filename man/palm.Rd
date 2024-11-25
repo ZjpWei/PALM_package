@@ -35,7 +35,7 @@ and the name of each element must be the study ID. The order of samples should b
 For example, the values of this variable are subject IDs if each subject has multiple correlated samples
 (e.g., measured in a longitudinal study). Default is NULL (all samples in all studies are independent, so no need to provide this input.).}
 
-\item{N}{A list of vectors for sequence depth. Each element of the list pertains to one study, the length of each vector must match the sample size of each study. For each element, the value must be equal with
+\item{N}{A list of vectors for sequence depth. Each element of the list pertains to one study, the length of each vector must match the sample size of each study. For each element of vector, the value must be equal with
 or larger than the sequence depth that are calculated from `covariate.interest`. Default is NULL, the calculated sequence depth will be used in this case.}
 
 \item{depth.filter}{A cutoff value to remove samples with sequencing depth less than or equal to the cutoff. Default is 0.}
@@ -58,7 +58,7 @@ If only more than one study are in `rel.abd`, the component includes the followi
 \item{palm_meta}{A data frame includes meta-analysis results with features, coefficients, standardized error, p-value and q-value.}
 }
 \description{
-Palm is a meta-analysis method designed to account for the unique features of compositional microbiome data
+PALM is a meta-analysis method designed to account for the unique features of compositional microbiome data
 in selecting microbial signatures.
 }
 \examples{

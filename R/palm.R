@@ -1,6 +1,6 @@
 #' @title Meta-analysis for selecting microbial signatures associated with covariate of interests.
 #'
-#' @description Palm is a meta-analysis method designed to account for the unique features of compositional microbiome data
+#' @description PALM is a meta-analysis method designed to account for the unique features of compositional microbiome data
 #' in selecting microbial signatures.
 #'
 #' @author Zhoujingpeng Wei, Guanhua Chen, Zheng-Zheng Tang
@@ -19,7 +19,7 @@
 #' and the name of each element must be the study ID. The order of samples should be matched with the order in "rel.abd" in the corresponding study.
 #' For example, the values of this variable are subject IDs if each subject has multiple correlated samples
 #' (e.g., measured in a longitudinal study). Default is NULL (all samples in all studies are independent, so no need to provide this input.).
-#' @param N A list of vectors for sequence depth. Each element of the list pertains to one study, the length of each vector must match the sample size of each study. For each element, the value must be equal with
+#' @param N A list of vectors for sequence depth. Each element of the list pertains to one study, the length of each vector must match the sample size of each study. For each element of vector, the value must be equal with
 #' or larger than the sequence depth that are calculated from `covariate.interest`. Default is NULL, the calculated sequence depth will be used in this case.
 #' @param depth.filter A cutoff value to remove samples with sequencing depth less than or equal to the cutoff. Default is 0.
 #' @param prev.filter A cutoff value remove microbial features with prevalence (proportion of nonzero observations)

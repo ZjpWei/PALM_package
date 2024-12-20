@@ -7,7 +7,7 @@
 palm.null.model(
   rel.abd,
   covariate.adjust = NULL,
-  N = NULL,
+  depth = NULL,
   depth.filter = 0,
   prev.filter = 0.1
 )
@@ -17,9 +17,9 @@ palm.null.model(
 }
 \value{
 Output a list with each component for a study. The component includes the following elements.
-\item{Y_I}{A matrix of intermediate results.}
-\item{Y_R}{A matrix of intermediate results.}
-\item{Z}{A vector of microbiome sequencing depth for the study.}
+\item{Y_I}{A matrix of predicted abundance.}
+\item{Y_R}{A matrix of abundance residual.}
+\item{Z}{Cleaned ad formatted covariate.adjust.}
 \item{rm.sample.idx}{The index of the removed samples for the study.}
 }
 \description{
@@ -31,7 +31,7 @@ construct summary statistics for covariates of interest in each study.
 \examples{
 \donttest{
 library("PALM")
-data("CRC_data", package = "miMeta")
+data("CRC_data", package = "PALM")
 CRC_abd <- CRC_data$CRC_abd
 CRC_meta <- CRC_data$CRC_meta
 
@@ -47,6 +47,6 @@ null.obj <- palm.null.model(rel.abd = rel.abd)
 }
 \seealso{
 \code{\link{palm.get.summary}},
-\code{\link{palm.test}},
+\code{\link{meta.summary}},
 \code{\link{palm}}
 }

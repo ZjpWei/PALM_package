@@ -257,7 +257,6 @@ List palm_rcpp(
 
     colnames(est_mat) = cov_int_nm;
     rownames(est_mat) = feature_ID;
-
     colnames(cov_mat) = cov_int_nm;
     rownames(cov_mat) = feature_ID;
 

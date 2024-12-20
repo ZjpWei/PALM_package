@@ -17,7 +17,7 @@
 #' \item{n}{Sample size for the study.}
 #'
 #' @seealso \code{\link{palm.null.model}},
-#' \code{\link{palm.test}},
+#' \code{\link{meta.summary}},
 #' \code{\link{palm}}
 #'
 #' @import dplyr Rcpp
@@ -26,7 +26,7 @@
 #' @examples
 #' \donttest{
 #' library("PALM")
-#' data("CRC_data", package = "miMeta")
+#' data("CRC_data", package = "PALM")
 #' CRC_abd <- CRC_data$CRC_abd
 #' CRC_meta <- CRC_data$CRC_meta
 #'

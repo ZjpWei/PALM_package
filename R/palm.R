@@ -19,7 +19,7 @@
 #' and the name of each element must be the study ID. The order of samples should be matched with the order in "rel.abd" in the corresponding study.
 #' For example, the values of this variable are subject IDs if each subject has multiple correlated samples
 #' (e.g., measured in a longitudinal study). Default is NULL (all samples in all studies are independent, so no need to provide this input.).
-#' @param N A list of vectors for sequence depth. Each element of the list pertains to one study, the length of each vector must match the sample size of each study. For each element of vector, the value must be equal with
+#' @param depth A list of vectors for sequence depth. Each element of the list pertains to one study, the length of each vector must match the sample size of each study. For each element of vector, the value must be equal with
 #' or larger than the sequence depth that are calculated from `covariate.interest`. Default is NULL, the calculated sequence depth will be used in this case.
 #' @param depth.filter A cutoff value to remove samples with sequencing depth less than or equal to the cutoff. Default is 0.
 #' @param prev.filter A cutoff value remove microbial features with prevalence (proportion of nonzero observations)
@@ -38,7 +38,7 @@
 #'
 #' @seealso \code{\link{palm.get.summary}},
 #' \code{\link{palm.null.model}},
-#' \code{\link{palm.test}}
+#' \code{\link{meta.summary}}
 #'
 #' @import dplyr
 #' @export
@@ -46,7 +46,7 @@
 #' @examples
 #' \donttest{
 #' library("PALM")
-#' data("CRC_data", package = "miMeta")
+#' data("CRC_data", package = "PALM")
 #' CRC_abd <- CRC_data$CRC_abd
 #' CRC_meta <- CRC_data$CRC_meta
 #'
@@ -68,7 +68,7 @@ palm <- function(rel.abd,
                  covariate.interest,
                  covariate.adjust = NULL,
                  cluster = NULL,
-                 N = NULL,
+                 depth = NULL,
                  depth.filter = 0,
                  prev.filter = 0.1,
                  p.adjust.method = "fdr",
@@ -78,7 +78,7 @@ palm <- function(rel.abd,
   #=== Generate summary statistics ===#
   null.obj <- palm.null.model(rel.abd = rel.abd,
                               covariate.adjust = covariate.adjust,
-                              N = N,
+                              depth = depth,
                               depth.filter = depth.filter,
                               prev.filter = prev.filter)
 
@@ -88,8 +88,7 @@ palm <- function(rel.abd,
                                     verbose = verbose)
 
   # Meta-analysis
-  palm.model <- palm.test(summary.stats = summary.stats,
-                          p.adjust.method = p.adjust.method)
+  palm.model <- palm.meta.summary(summary.stats = summary.stats, p.adjust.method = p.adjust.method)
 
   return(palm.model)
 }

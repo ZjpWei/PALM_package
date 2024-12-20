@@ -18,7 +18,7 @@
 #' @examples
 #' \donttest{
 #' library("PALM")
-#' data("CRC_data", package = "miMeta")
+#' data("CRC_data", package = "PALM")
 #' CRC_abd <- CRC_data$CRC_abd
 #' CRC_meta <- CRC_data$CRC_meta
 #'
@@ -32,21 +32,16 @@
 #'   covariate.interest[[d]] <- matrix(disease, ncol = 1, dimnames = list(names(disease), "disease"))
 #' }
 #'
-#' null.obj <- palm.null.model(rel.abd = rel.abd, ref = "Coprococcus catus [ref_mOTU_v2_4874]")
+#' null.obj <- palm.null.model(rel.abd = rel.abd)
 #'
 #' summary.stats <- palm.get.summary(null.obj = null.obj, covariate.interest = covariate.interest)
 #'
 #' ########## Meta-analysis ##########
-#' meta.result <- palm.test(summary.stats = summary.stats)
+#' meta.result <- palm.meta.summary(summary.stats = summary.stats)
 #' }
 #'
 
-palm.test <- function(summary.stats = summary.stats,
-                      p.adjust.method = "fdr"){
-
-
-  data.type <- "RA"
-  cor.method = "adjust"
+palm.meta.summary <- function(summary.stats = summary.stats, p.adjust.method = "fdr"){
 
   palm.meta <- list()
   covariate.interest <- unique(unlist(lapply(summary.stats, function(d){colnames(d$est)})))
@@ -68,42 +63,21 @@ palm.test <- function(summary.stats = summary.stats,
                      dimnames = list(feature.ID, as.character(study.ID)))
 
     for(d in study.ID){
-      if(data.type == "AA"){
-        min.delta <- 0
-      }else if(data.type == "RA"){
-        min.delta <- median(- summary.stats[[d]]$est[,cov.int], na.rm = TRUE)
-      }else{
-        stop("The data type should only be `AA` or `RA`, please check your input data.\n")
-      }
+      min.delta <- median(- summary.stats[[d]]$est[,cov.int], na.rm = TRUE)
       non.na <- !is.na(summary.stats[[d]]$est[,cov.int])
       median.var <- 0
       beta.coef <- summary.stats[[d]]$est[non.na,cov.int] + min.delta
 
-      if(cor.method == "original"){
-        pval <- 1 - pchisq(beta.coef^2 / summary.stats[[d]]$var[non.na,cov.int], df = 1)
-        qval <- p.adjust(p = pval, method = p.adjust.method)
-        palm_fits[[d]] <- data.frame(feature = names(beta.coef),
-                                     coef = beta.coef,
-                                     stderr = sqrt(summary.stats[[d]]$var[non.na,cov.int]),
-                                     pval = pval,
-                                     qval = qval)
-      }else{
-        pval <- 1 - pchisq(beta.coef^2 / (summary.stats[[d]]$var[non.na,cov.int] + sum(summary.stats[[d]]$var[non.na,cov.int])/sum(non.na)^2), df = 1)
-        qval <- p.adjust(p = pval, method = p.adjust.method)
-        palm_fits[[d]] <- data.frame(feature = names(beta.coef),
-                                     coef = beta.coef,
-                                     stderr = sqrt(summary.stats[[d]]$var[non.na,cov.int] + sum(summary.stats[[d]]$var[non.na,cov.int])/sum(non.na)^2),
-                                     pval = pval,
-                                     qval = qval)
-      }
-
+      pval <- 1 - pchisq(beta.coef^2 / (summary.stats[[d]]$var[non.na,cov.int] + sum(summary.stats[[d]]$var[non.na,cov.int])/sum(non.na)^2), df = 1)
+      qval <- p.adjust(p = pval, method = p.adjust.method)
+      palm_fits[[d]] <- data.frame(feature = names(beta.coef),
+                                   coef = beta.coef,
+                                   stderr = sqrt(summary.stats[[d]]$var[non.na,cov.int] + sum(summary.stats[[d]]$var[non.na,cov.int])/sum(non.na)^2),
+                                   pval = pval,
+                                   qval = qval)
 
       AA.est[names(beta.coef),d] <- beta.coef
-      if(cor.method == "original"){
-        AA.var[names(beta.coef),d] <- summary.stats[[d]]$var[non.na,cov.int]
-      }else{
-        AA.var[names(beta.coef),d] <- summary.stats[[d]]$var[non.na,cov.int] + sum(summary.stats[[d]]$var[non.na,cov.int])/sum(non.na)^2
-      }
+      AA.var[names(beta.coef),d] <- summary.stats[[d]]$var[non.na,cov.int] + sum(summary.stats[[d]]$var[non.na,cov.int])/sum(non.na)^2
     }
 
     if(length(study.ID) > 1){
@@ -113,17 +87,34 @@ palm.test <- function(summary.stats = summary.stats,
       meta.coef <- est.statics / var.statics
       meta.var <- 1 / var.statics
       q.coef <- (meta.coef)^2 / meta.var
-
       pval.sin <- 1 - pchisq(q.coef, df = 1)
       qval.sin <- p.adjust(pval.sin, method = p.adjust.method)
 
+      ## Calculate Heterogeneity
+      pval.het <- NULL
+      for(k in 1:nrow(AA.est)){
+        nonna.id <- !is.na(AA.est[k,])
+        m <- try(metafor::rma(yi = AA.est[k,nonna.id], vi = AA.var[k,nonna.id],
+                              control=list(maxiter=2000), method = "EE"), silent = TRUE)
+        if(class(m)[1] != "try-error"){
+          pval.het <- c(pval.het, m$QEp)
+        }else{
+          pval.het <- c(pval.het, NA)
+        }
+      }
+      qval.het <- p.adjust(pval.het, method = p.adjust.method)
+
+      ## Summary
       meta_fits <- data.frame(feature = rownames(AA.est),
                               coef = meta.coef,
                               stderr = sqrt(meta.var),
                               pval = pval.sin,
-                              qval = qval.sin)
+                              qval = qval.sin,
+                              pval.het = pval.het,
+                              qval.het = qval.het)
 
-      palm.meta[[cov.int]] <- list(meta_fits = meta_fits, palm_fits = palm_fits)
+      rownames(meta_fits) <- NULL
+      palm.meta[[cov.int]] <- meta_fits
     }else{
       palm.meta[[cov.int]] <- palm_fits[[study.ID]]
     }

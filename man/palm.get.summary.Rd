@@ -35,7 +35,7 @@ The output can be directly used by the function "palm.test" to perform meta-anal
 \examples{
 \donttest{
 library("PALM")
-data("CRC_data", package = "miMeta")
+data("CRC_data", package = "PALM")
 CRC_abd <- CRC_data$CRC_abd
 CRC_meta <- CRC_data$CRC_meta
 
@@ -57,6 +57,6 @@ for(d in unique(CRC_meta$Study)){
 }
 \seealso{
 \code{\link{palm.null.model}},
-\code{\link{palm.test}},
+\code{\link{meta.summary}},
 \code{\link{palm}}
 }

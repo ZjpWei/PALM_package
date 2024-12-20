@@ -8,22 +8,22 @@
 #' @param ... See function palm
 #'
 #' @return Output a list with each component for a study. The component includes the following elements.
-#' \item{Y_I}{A matrix of intermediate results.}
-#' \item{Y_R}{A matrix of intermediate results.}
-#' \item{Z}{A vector of microbiome sequencing depth for the study.}
+#' \item{Y_I}{A matrix of predicted abundance.}
+#' \item{Y_R}{A matrix of abundance residual.}
+#' \item{Z}{Cleaned ad formatted covariate.adjust.}
 #' \item{rm.sample.idx}{The index of the removed samples for the study.}
 #'
 #' @seealso \code{\link{palm.get.summary}},
-#' \code{\link{palm.test}},
+#' \code{\link{meta.summary}},
 #' \code{\link{palm}}
 #'
-#' @import dplyr
+#' @import dplyr brglm2
 #' @export
 #'
 #' @examples
 #' \donttest{
 #' library("PALM")
-#' data("CRC_data", package = "miMeta")
+#' data("CRC_data", package = "PALM")
 #' CRC_abd <- CRC_data$CRC_abd
 #' CRC_meta <- CRC_data$CRC_meta
 #'
@@ -39,7 +39,7 @@
 
 palm.null.model <- function(rel.abd,
                             covariate.adjust = NULL,
-                            N = NULL,
+                            depth = NULL,
                             depth.filter = 0,
                             prev.filter = 0.1){
 
@@ -74,14 +74,14 @@ palm.null.model <- function(rel.abd,
         stop("Detect NA in covariate.adjust.\n")
       }
     }
-    if(is.null(N[[d]])){
-      N[[d]] <- rowSums(rel.abd[[d]])
+    if(is.null(depth[[d]])){
+      depth[[d]] <- rowSums(rel.abd[[d]])
     }else{
-      if(!is.vector(N[[d]])){
-        stop(paste0("N in study ", d, " is not a vector, please check the input data.\n"))
+      if(!is.vector(depth[[d]])){
+        stop(paste0("depth in study ", d, " is not a vector, please check the input data.\n"))
       }
-      if(length(N[[d]]) != nrow(rel.abd[[d]])){
-        stop(paste0("The length of N in study ", d, " doesn't match the dimension of input data.\n"))
+      if(length(depth[[d]]) != nrow(rel.abd[[d]])){
+        stop(paste0("The length of depth in study ", d, " doesn't match the dimension of input data.\n"))
       }
     }
   }
@@ -89,10 +89,10 @@ palm.null.model <- function(rel.abd,
   #=== Filter the samples using depth.filter ===#
   rm.sample.idx <- list()
   for(d in study.ID){
-    depth.kp <- which(N[[d]] > depth.filter)
-    rm.sample.idx[[d]] <- which(N[[d]] <= depth.filter)
-    rel.abd[[d]] <- rel.abd[[d]][depth.kp,,drop=FALSE]
-    N[[d]] <- N[[d]][depth.kp]
+    depth.kp <- which(depth[[d]] > depth.filter)
+    rm.sample.idx[[d]] <- which(depth[[d]] <= depth.filter)
+    rel.abd[[d]] <- as.matrix(rel.abd[[d]][depth.kp,,drop=FALSE])
+    depth[[d]] <- depth[[d]][depth.kp]
     if(!is.null(covariate.adjust[[d]])){
       covariate.adjust[[d]] <- covariate.adjust[[d]] %>% dplyr::slice(depth.kp)
     }
@@ -124,7 +124,7 @@ palm.null.model <- function(rel.abd,
         }
       }
     }
-    data.relative[[d]] <- list(Y = Y.pool, X = X.pool, N = N[[d]])
+    data.relative[[d]] <- list(Y = Y.pool, X = X.pool, N = depth[[d]])
   }
 
   #=== Generate null model ===#

@@ -261,15 +261,15 @@ List palm_rcpp(
     colnames(cov_mat) = cov_int_nm;
     rownames(cov_mat) = feature_ID;
 
+    List null_obj_d = null_obj[d];
+    List cov_int_d = covariate_interest[d];
+    NumericMatrix Y_R = as<NumericMatrix>(null_obj_d["Y_R"]);
+    NumericMatrix Y_I = as<NumericMatrix>(null_obj_d["Y_I"]);
+    NumericMatrix X = as<NumericMatrix>(null_obj_d["Z"]);
+    NumericVector SUBid = as<NumericVector>(SUB_id[d]);
+
     for (int cov_name_idx = 0; cov_name_idx < cov_int_nm.size(); ++cov_name_idx) {
       String cov_name = cov_int_nm[cov_name_idx];
-
-      List null_obj_d = null_obj[d];
-      List cov_int_d = covariate_interest[d];
-      NumericMatrix Y_R = as<NumericMatrix>(null_obj_d["Y_R"]);
-      NumericMatrix Y_I = as<NumericMatrix>(null_obj_d["Y_I"]);
-      NumericMatrix X = as<NumericMatrix>(null_obj_d["Z"]);
-      CharacterVector SUBid = as<CharacterVector>(SUB_id[d]);
 
       LogicalVector kp_indices = kp_sample_id(_, cov_name_idx);
       IntegerVector kp_indices_int = seq_along(kp_indices) - 1; // indices for subsetting
@@ -278,31 +278,32 @@ List palm_rcpp(
       NumericMatrix Y_R_sub = subset_matrix(Y_R, kp_indices_int_sub, Range(0,Y_R.ncol()-1));
       NumericMatrix Y_I_sub = subset_matrix(Y_I, kp_indices_int_sub, Range(0,Y_I.ncol()-1));
       NumericMatrix X_sub = subset_matrix(X,kp_indices_int_sub, Range(0,X.ncol()-1));
-      CharacterVector SUBid_sub = SUBid[kp_indices_int_sub];
+      NumericVector SUBid_sub = SUBid[kp_indices_int_sub];
 
-      CharacterVector uniq_SUBid = unique(SUBid_sub);
       NumericVector cov_col = as<NumericVector>(cov_int_d[cov_name]);
 
       for (int i = 0; i < kp_indices_int_sub.size(); ++i) {
         X_sub(i, X_sub.ncol() - 1) = cov_col[i];
       }
-
       NumericVector ests, covs;
 
-      for (int k = 0; k < Y_I_sub.ncol(); ++k) {
-        NumericMatrix s_i_lst(uniq_SUBid.size(), X_sub.ncol());
-        NumericMatrix I_mat(X.ncol(), X_sub.ncol());
+      List XX_lst(SUBid_sub.size());
+      for (int l = 0; l < SUBid_sub.size(); ++l) {
+        NumericMatrix XX = create_matrix(X_sub(l, _));
+        XX_lst[l] = XX;
+      }
 
-        for (int l = 0; l < uniq_SUBid.size(); ++l) {
-          NumericVector s_i_SUB(X.ncol());
-          for (int i = 0; i < SUBid_sub.size(); ++i) {
-            if (uniq_SUBid[l] == SUBid_sub[i]) {
-              s_i_SUB += Y_R_sub(i, k) * X_sub(i, _);
-              NumericMatrix XX = create_matrix(X_sub(i, _));
-              I_mat += Y_I_sub(i, k) * XX;
-            }
-          }
-          s_i_lst(l, _) = s_i_SUB;
+      for (int k = 0; k < Y_I_sub.ncol(); ++k) {
+        NumericMatrix s_i_lst(max(SUBid_sub), X_sub.ncol());
+        NumericMatrix I_mat(X_sub.ncol(), X_sub.ncol());
+
+        for (int l = 0; l < SUBid_sub.size(); ++l) {
+          NumericVector temp_row = s_i_lst(SUBid_sub(l) - 1, _); // Extract the row
+          temp_row += Y_R_sub(l, k) * X_sub(l, _);               // Perform element-wise addition
+          s_i_lst(SUBid_sub(l) - 1, _) = temp_row;
+
+          NumericMatrix XX = XX_lst[l];
+          I_mat += Y_I_sub(l, k) * XX;
         }
 
         int beta_name = X_sub.ncol() - 1;
@@ -311,7 +312,6 @@ List palm_rcpp(
         NumericMatrix I_gamma = subset_matrix(I_mat, gamma_name, gamma_name);
         NumericMatrix I_beta(1, 1);
         I_beta(0, 0) = I_mat(beta_name, beta_name);
-
         NumericMatrix Inv_I_gamma = invert_matrix(I_gamma);
 
         for (int l1 = 0; l1 < gamma_name.size(); ++l1) {

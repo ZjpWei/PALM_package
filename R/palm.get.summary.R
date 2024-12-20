@@ -92,7 +92,7 @@ palm.get.summary <- function(null.obj,
     if(is.null(cluster[[d]])){
       cluster.nm <- rownames(null.obj[[d]]$Y_I)
       names(cluster.nm) <- rownames(null.obj[[d]]$Y_I)
-      SUB.id[[d]] <- cluster.nm
+      SUB.id[[d]] <- as.numeric(factor(cluster.nm))
     }else{
       if(!is.vector(cluster[[d]])){
         stop("cluster is not a list of vectors. \n")
@@ -106,7 +106,7 @@ palm.get.summary <- function(null.obj,
       }
       cluster.nm <- cluster[[d]]
       names(cluster.nm) <- rownames(null.obj[[d]]$Y_I)
-      SUB.id[[d]] <- cluster.nm
+      SUB.id[[d]] <- as.numeric(factor(cluster.nm))
     }
   }
 
@@ -125,7 +125,8 @@ palm.get.summary <- function(null.obj,
 
 
   ## Get summary statistics by palm_rcpp
-  summary.stat.study <- palm_rcpp(null_obj = null.obj, covariate_interest = covariate.interest, SUB_id = SUB.id,
+  summary.stat.study <- palm_rcpp(null_obj = null.obj, covariate_interest = covariate.interest,
+                                  SUB_id = SUB.id,
                                   study_ID = study.ID, feature_ID = feature.ID, Cov_int_info = Cov.int.info,
                                   Sample_info = Sample.info)
 

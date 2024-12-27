@@ -1,12 +1,12 @@
 ## miMeta
 
-`miMeta` is a R package and it implements the new methods for meta-analysis of microbiome association studies that respect the unique features of microbiome data such as compositionality.
+`PALM` is a R package and it implements a quasi-Poisson-based framework designed for robust, scalable, and reproducible identification of covariate-associated microbial features in large-scale microbiome association studies and meta-analyses. The package can perform single-study association analysis and meta-analysis across multiple studies. This tutorial provides examples demonstrating meta-analysis.
 
 See following items for more details:
 
-* [`miMeta` Manual](https://github.com/ZjpWei/PALM_package/blob/main/doc/PALM_0.1.0.pdf).
+* [`PALM` Manual](https://github.com/ZjpWei/PALM_package/blob/main/doc/PALM_0.1.0.pdf).
 
-* [`miMeta` vignette](https://htmlpreview.github.io/?https://github.com/ZjpWei/miMeta/blob/main/doc/PALM_vignette.html).
+* [`PALM` vignette](https://htmlpreview.github.io/?https://github.com/ZjpWei/miMeta/blob/main/doc/PALM_vignette.html).
 
 * Article: * Zhoujingpeng Wei, Qilin Hong, Guanhua Chen, Tina V. Hartert, Christian Rosas-Salazar,  Suman R. Das, and Zheng-Zheng Tang. *Fast and reliable association discovery in large-scale microbiome studies and meta-analyses using PALM*.
 

@@ -1,4 +1,4 @@
-## miMeta
+## PALM
 
 `PALM` is a R package and it implements a quasi-Poisson-based framework designed for robust, scalable, and reproducible identification of covariate-associated microbial features in large-scale microbiome association studies and meta-analyses. The package can perform single-study association analysis and meta-analysis across multiple studies. This tutorial provides examples demonstrating meta-analysis.
 

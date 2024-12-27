@@ -8,7 +8,7 @@ See following items for more details:
 
 * [`PALM` vignette](https://htmlpreview.github.io/?https://github.com/ZjpWei/PALM_package/blob/main/doc/PALM_vignette.html).
 
-* Article: * Zhoujingpeng Wei, Qilin Hong, Guanhua Chen, Tina V. Hartert, Christian Rosas-Salazar,  Suman R. Das, and Zheng-Zheng Tang. *Fast and reliable association discovery in large-scale microbiome studies and meta-analyses using PALM*.
+* Article: Zhoujingpeng Wei, Qilin Hong, Guanhua Chen, Tina V. Hartert, Christian Rosas-Salazar,  Suman R. Das, and Zheng-Zheng Tang. *Fast and reliable association discovery in large-scale microbiome studies and meta-analyses using PALM*.
 
 ## Author
 

@@ -5,7 +5,7 @@ See following items for more details:
 
 * [`PALM` Manual](https://github.com/ZjpWei/PALM_package/blob/main/doc/PALM_0.1.0.pdf).
 
-* [`PALM` Vignette](https://ZjpWei.github.io/PALM_package/doc/PALM_vignette.html).
+* [`PALM` Vignette](https://ZjpWei.github.io/PALM_package/PALM_vignette.html).
 
 * Article: Zhoujingpeng Wei, Qilin Hong, Guanhua Chen, Tina V. Hartert, Christian Rosas-Salazar,  Suman R. Das, and Zheng-Zheng Tang. *Fast and reliable association discovery in large-scale microbiome studies and meta-analyses using PALM*.
 

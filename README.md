@@ -65,7 +65,7 @@ meta.result <- palm(rel.abd = rel.abd, covariate.interest = covariate.interest)
 
 ## Issues tracker
 
-Please use the [issues tracker](https://github.com/ZjpWei/PALM_package/issues) to report any bugs or give any suggestions.
+Please use the [issues tracker](https://github.com/ZjpWei/PALM_package/issues) to report any bugs or give any suggestions. Please feel free to contact me [Weizhou](mailto:zwei74@wisc.edu?subject=[GitHub]%20Melody%20paper%20analysis).
 
 ## License
 

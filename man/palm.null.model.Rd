@@ -47,6 +47,6 @@ null.obj <- palm.null.model(rel.abd = rel.abd)
 }
 \seealso{
 \code{\link{palm.get.summary}},
-\code{\link{meta.summary}},
+\code{\link{palm.meta.summary}},
 \code{\link{palm}}
 }

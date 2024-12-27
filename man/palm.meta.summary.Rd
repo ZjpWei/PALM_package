@@ -12,11 +12,11 @@ palm.meta.summary(summary.stats = summary.stats, p.adjust.method = "fdr")
 \item{...}{See function palm.}
 }
 \value{
-Same output as the function "palm".
+Same output as the function "palm" when performing meta-analysis.
 }
 \description{
 This function directly takes the summary statistics output from the "palm.get.summary"
-function and combines the summary statistics across studies for selecting microbial signatures associated with each covariate of interest.
+function and combines the summary statistics across studies for selecting microbial features associated with each covariate of interest.
 }
 \examples{
 \donttest{

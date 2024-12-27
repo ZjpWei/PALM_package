@@ -1,44 +1,44 @@
-#' @title Meta-analysis for selecting microbial signatures associated with covariate of interests.
+#' @title Meta-analysis for selecting microbial features associated with covariate of interests.
 #'
-#' @description PALM is a meta-analysis method designed to account for the unique features of compositional microbiome data
-#' in selecting microbial signatures.
+#' @description Implementation of PALM for single-study association analysis and meta-analysis across
+#' multiple studies. This function conducts feature-level association testing, evaluating one covariate
+#' of interest at a time.
 #'
-#' @author Zhoujingpeng Wei, Guanhua Chen, Zheng-Zheng Tang
+#' @author Zhoujingpeng Wei, Qilin Hong, Guanhua Chen, Tina V. Hartert, Christian Rosas-Salazar, Suman R. Das, and Zheng-Zheng Tang.
 #'
-#' @param rel.abd A list of matrices for relative abundance counts. Each element of the list pertains to one study,
-#' and the name of each element must be the study ID. Each matrix must have sample IDs as row names and microbial feature IDs as column names.
-#' No missing value is allowed.
-#' @param covariate.interest A list of matrices for single or multiple covariates of interest. Each element of the list pertains to one study, and the name of each element must be
-#' the study ID. In a matrix of a given study, each row is a sample, and each column is a covariate of interest and can only be a numeric vector.
-#' The set of covariates can be different among studies. In a given study, the order of samples should be matched with the order in "rel.abd". No missing value is allowed.
-#' @param covariate.adjust A list of data frames for covariates that will be adjusted for in the model. Each element of the list pertains to one study,
-#' and the name of each element must be the study ID. In a data frame of a given study, each row is a sample, and each column is a covariate to be adjusted and can only be a factor or numeric vector.
-#' The set of covariates can be different among studies. In a given study, the order of samples should be matched with the order in "rel.abd". No missing value is allowed.
-#' Default is NULL (not adjusting for any covariates)
-#' @param cluster A list of vectors of variable that define the sample cluster for studies with correlated samples. Each element of the list pertains to one study with correlated samples,
-#' and the name of each element must be the study ID. The order of samples should be matched with the order in "rel.abd" in the corresponding study.
-#' For example, the values of this variable are subject IDs if each subject has multiple correlated samples
-#' (e.g., measured in a longitudinal study). Default is NULL (all samples in all studies are independent, so no need to provide this input.).
-#' @param depth A list of vectors for sequence depth. Each element of the list pertains to one study, the length of each vector must match the sample size of each study. For each element of vector, the value must be equal with
-#' or larger than the sequence depth that are calculated from `covariate.interest`. Default is NULL, the calculated sequence depth will be used in this case.
+#' @param rel.abd For a single association study, provide a matrix of relative abundance counts, with sample IDs as row names and microbial feature IDs as column names. The matrix must not contain any missing values.
+#' For a meta-analysis, provide a list of such matrices, where each element corresponds to one study, and the name of each element represents the study ID.
+#' @param covariate.interest For a single association study, provide a matrix where rows represent samples, and columns represent numeric covariates of interest. The order of samples must match the order in "rel.abd",
+#' and the matrix must not contain any missing values. For a meta-analysis, provide a list of such matrices, where each element corresponds to one study, and the name of each element represents the study ID.
+#' The set of covariates can differ across studies.
+#' @param covariate.adjust For a single association study, provide a data frame where rows represent samples, and columns represent covariates to be adjusted in the model. Covariates must be either factors or numeric vectors.
+#' The order of samples must match the order in rel.abd, and the data frame must not contain any missing values. For a meta-analysis, provide a list of such data frames, where each element corresponds to one study,
+#' and the name of each element represents the study ID. The set of covariates can differ across studies. The default is NULL, meaning no covariates are adjusted.
+#' @param cluster For a single association study with correlated samples, provide a vector that defines the sample clusters. The order of samples in the vector must match the order in "rel.abd". For example,
+#' the values of this variable can be subject IDs if each subject has multiple correlated samples (e.g., in a longitudinal study). For a meta-analysis, provide a list of such vectors,
+#' where each element pertains to one study with correlated samples, and the name of each element must be the study ID. The order of samples in each vector must match the order in "rel.abd" for the corresponding study.
+#' The default is NULL, assuming all samples across all studies are independent, in which case this input is not required.
+#' @param depth For a single association study, provide a vector representing the sequencing depth for each sample. The length of the vector must match the number of samples, and the order must align with "rel.abd".
+#' For a meta-analysis, provide a list of such vectors, where each element corresponds to one study, and the name of each element must be the study ID. The length of each vector must match the sample size of the corresponding study.
+#' The default is NULL, in which case the sequencing depth is calculated as the row sum of "rel.abd".
 #' @param depth.filter A cutoff value to remove samples with sequencing depth less than or equal to the cutoff. Default is 0.
 #' @param prev.filter A cutoff value remove microbial features with prevalence (proportion of nonzero observations)
 #' less than or equal to the cutoff. This cutoff is applied to each study. So, a feature could be removed in a subset of the studies. The cutoff value must be in the range of 0-1. Default is 0.1.
 #' @param p.adjust.method p-value correction method, a character string, should be one of "holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr", "none". Default is "fdr".
-#' @param verbose: Whether to print verbose information. Default is FALSE. (see details in Value)
 #'
 #' @return Output a list with each component for a covariate of interest.
 #'
-#' If only one study is in `rel.abd`, the component includes the following elements to deliver the single-study analysis.
-#' \item{palm_fits}{A list of one data frame includes features, coefficients, standardized error, p-value and q-value.}
+#' For the single-study analysis, the component includes the following elements:
+#' \item{palm_single}{A data framework containing association effect estimates, standard errors, p-values, and q-values
+#' and summary statistics (association effect estimates and standard errors).}
 #'
-#' If only more than one study are in `rel.abd`, the component includes the following elements to deliver the meta-analysis results and single-study results for each study.
-#' \item{palm_fits}{A list of multiple data frames includes features, coefficients, standardized error, p-value and q-value.}
-#' \item{palm_meta}{A data frame includes meta-analysis results with features, coefficients, standardized error, p-value and q-value.}
+#' For the met-analysis of multiple association studies, the component includes the following elements:
+#' \item{palm_meta}{A data framework containing the overall association effect estimates, standard errors, p-values,
+#' and q-values and summary statistics (association effect estimates and standard errors) for an individual study.}
 #'
 #' @seealso \code{\link{palm.get.summary}},
 #' \code{\link{palm.null.model}},
-#' \code{\link{meta.summary}}
+#' \code{\link{palm.meta.summary}}
 #'
 #' @import dplyr
 #' @export
@@ -71,8 +71,7 @@ palm <- function(rel.abd,
                  depth = NULL,
                  depth.filter = 0,
                  prev.filter = 0.1,
-                 p.adjust.method = "fdr",
-                 verbose = FALSE
+                 p.adjust.method = "fdr"
 ) {
 
   #=== Generate summary statistics ===#
@@ -84,8 +83,7 @@ palm <- function(rel.abd,
 
   summary.stats <- palm.get.summary(null.obj = null.obj,
                                     covariate.interest = covariate.interest,
-                                    cluster = cluster,
-                                    verbose = verbose)
+                                    cluster = cluster)
 
   # Meta-analysis
   palm.model <- palm.meta.summary(summary.stats = summary.stats, p.adjust.method = p.adjust.method)

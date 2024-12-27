@@ -4,19 +4,13 @@
 \alias{palm.get.summary}
 \title{Generate palm summary statistics for individual studies.}
 \usage{
-palm.get.summary(
-  null.obj,
-  covariate.interest,
-  cluster = NULL,
-  parallel.core = NULL,
-  verbose = FALSE
-)
+palm.get.summary(null.obj, covariate.interest, cluster = NULL)
 }
 \arguments{
 \item{null.obj}{The output of function "palm.null.model".}
 
-\item{...}{See function palm In covariate.interest and cluster,
-the order of samples should be matched with the order in rel.abd used in the "palm.null.model" function.}
+\item{...}{See function palm in "covariate.interest" and "cluster",
+the order of samples should be matched with the order in "rel.abd" used in the "palm.null.model" function.}
 }
 \value{
 Output a list with each component for a study. The component includes the following elements.
@@ -30,7 +24,7 @@ and the column names are the covariates of interest IDs.}
 \description{
 This function directly takes the output object from the "palm.null.model" function and
 constructs summary statistics for covariates of interest in each study.
-The output can be directly used by the function "palm.test" to perform meta-analysis.
+The output can be directly used by the function "plam.meta.summary" to perform meta-analysis.
 }
 \examples{
 \donttest{
@@ -57,6 +51,6 @@ for(d in unique(CRC_meta$Study)){
 }
 \seealso{
 \code{\link{palm.null.model}},
-\code{\link{meta.summary}},
+\code{\link{palm.meta.summary}},
 \code{\link{palm}}
 }

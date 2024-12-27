@@ -1,12 +1,12 @@
 #' @title Meta-analyze summary statistics across studies
 #'
 #' @description This function directly takes the summary statistics output from the "palm.get.summary"
-#' function and combines the summary statistics across studies for selecting microbial signatures associated with each covariate of interest.
+#' function and combines the summary statistics across studies for selecting microbial features associated with each covariate of interest.
 #'
 #' @param summary.stats The output of function "palm.get.summary".
 #' @param ... See function palm.
 #'
-#' @return Same output as the function "palm".
+#' @return Same output as the function "palm" when performing meta-analysis.
 #'
 #' @seealso \code{\link{palm.null.model}},
 #' \code{\link{palm.get.summary}},
@@ -74,7 +74,9 @@ palm.meta.summary <- function(summary.stats = summary.stats, p.adjust.method = "
                                    coef = beta.coef,
                                    stderr = sqrt(summary.stats[[d]]$var[non.na,cov.int] + sum(summary.stats[[d]]$var[non.na,cov.int])/sum(non.na)^2),
                                    pval = pval,
-                                   qval = qval)
+                                   qval = qval,
+                                   Study_effect = summary.stats[[d]]$est[non.na,cov.int],
+                                   Study_stderr = sqrt(summary.stats[[d]]$var[non.na,cov.int]))
 
       AA.est[names(beta.coef),d] <- beta.coef
       AA.var[names(beta.coef),d] <- summary.stats[[d]]$var[non.na,cov.int] + sum(summary.stats[[d]]$var[non.na,cov.int])/sum(non.na)^2
@@ -112,6 +114,11 @@ palm.meta.summary <- function(summary.stats = summary.stats, p.adjust.method = "
                               qval = qval.sin,
                               pval.het = pval.het,
                               qval.het = qval.het)
+
+      for(d in study.ID){
+        meta_fits[[paste0(d, "_effect")]] <- summary.stats[[d]]$est[,cov.int]
+        meta_fits[[paste0(d, "_stderr")]] <- sqrt(summary.stats[[d]]$var[,cov.int])
+      }
 
       rownames(meta_fits) <- NULL
       palm.meta[[cov.int]] <- meta_fits

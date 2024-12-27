@@ -14,7 +14,7 @@
 #' \item{rm.sample.idx}{The index of the removed samples for the study.}
 #'
 #' @seealso \code{\link{palm.get.summary}},
-#' \code{\link{meta.summary}},
+#' \code{\link{palm.meta.summary}},
 #' \code{\link{palm}}
 #'
 #' @import dplyr brglm2
@@ -44,6 +44,22 @@ palm.null.model <- function(rel.abd,
                             prev.filter = 0.1){
 
   #=== Check input data ===#
+  if(is.matrix(rel.abd)){
+    rel.abd <- list("Study" = rel.abd)
+    if(!is.null(covariate.adjust)){
+      if(!is.data.frame(covariate.adjust)){
+        stop("rel.abd is a matrix, covariate.adjust should be a data frame.")
+      }
+    }
+    if(!is.null(depth)){
+      if(!is.vector(depth)){
+        stop("rel.abd is a matrix, depth should be a vector.")
+      }
+    }
+    covariate.adjust <- list("Study" = covariate.adjust)
+    depth <- list("Study" = depth)
+  }
+
   study.ID <- names(rel.abd)
   if(is.null(study.ID)){
     stop("Please check the study name in rel.data.\n")

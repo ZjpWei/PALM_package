@@ -2,11 +2,11 @@
 #'
 #' @description This function directly takes the output object from the "palm.null.model" function and
 #' constructs summary statistics for covariates of interest in each study.
-#' The output can be directly used by the function "palm.test" to perform meta-analysis.
+#' The output can be directly used by the function "plam.meta.summary" to perform meta-analysis.
 #'
 #' @param null.obj The output of function "palm.null.model".
-#' @param ... See function palm In covariate.interest and cluster,
-#' the order of samples should be matched with the order in rel.abd used in the "palm.null.model" function.
+#' @param ... See function palm in "covariate.interest" and "cluster",
+#' the order of samples should be matched with the order in "rel.abd" used in the "palm.null.model" function.
 #'
 #' @return Output a list with each component for a study. The component includes the following elements.
 #' \item{est}{A matrix contains the relative-abundance association coefficient estimates for the study. The row names are microbial feature IDs
@@ -17,7 +17,7 @@
 #' \item{n}{Sample size for the study.}
 #'
 #' @seealso \code{\link{palm.null.model}},
-#' \code{\link{meta.summary}},
+#' \code{\link{palm.meta.summary}},
 #' \code{\link{palm}}
 #'
 #' @import dplyr Rcpp
@@ -48,11 +48,22 @@
 
 palm.get.summary <- function(null.obj,
                              covariate.interest,
-                             cluster = NULL,
-                             parallel.core = NULL,
-                             verbose = FALSE) {
+                             cluster = NULL) {
 
   #=== Check input data ===#
+  if(length(null.obj) == 1){
+    if(!is.matrix(covariate.interest)){
+      stop("null.obj only includes one study, covariate.interest should be a matrix.")
+    }
+    if(!is.null(cluster)){
+      if(!is.vector(cluster)){
+        stop("null.obj only includes one study, cluster should be a vector.")
+      }
+    }
+    covariate.interest <- list("Study" = covariate.interest)
+    cluster <- list("Study" = cluster)
+  }
+
   study.ID <- names(null.obj)
   feature.ID <- NULL
   cov.names <- NULL
@@ -68,9 +79,6 @@ palm.get.summary <- function(null.obj,
   feature.ID <- unique(feature.ID)
   cov.names <- unique(cov.names)
   K <- length(feature.ID)
-  if(verbose){
-    message.num <- 0
-  }
 
   ## Match rel.data, covariate.interest and covariate.adjust.
   SUB.id <- list()

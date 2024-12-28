@@ -1,14 +1,13 @@
-## miMeta
+## PALM
 
-`PALM` is a R package and it implements a quasi-Poisson-based framework designed for robust, scalable, and reproducible identification of covariate-associated microbial features in large-scale microbiome association studies and meta-analyses. The package can perform single-study association analysis and meta-analysis across multiple studies. This tutorial provides examples demonstrating meta-analysis.
-
+`PALM` is a R package and it implements a quasi-Poisson-based framework designed for robust, scalable, and reproducible identification of covariate-associated microbial features in large-scale microbiome association studies and meta-analyses. The package can perform single-study association analysis and meta-analysis across multiple studies.
 See following items for more details:
 
 * [`PALM` Manual](https://github.com/ZjpWei/PALM_package/blob/main/doc/PALM_0.1.0.pdf).
 
-* [`PALM` vignette](https://htmlpreview.github.io/?https://github.com/ZjpWei/miMeta/blob/main/doc/PALM_vignette.html).
+* [`PALM` Vignette](https://ZjpWei.github.io/PALM_package/PALM_vignette.html).
 
-* Article: * Zhoujingpeng Wei, Qilin Hong, Guanhua Chen, Tina V. Hartert, Christian Rosas-Salazar,  Suman R. Das, and Zheng-Zheng Tang. *Fast and reliable association discovery in large-scale microbiome studies and meta-analyses using PALM*.
+* Article: Wei et al. *Fast and reliable association discovery in large-scale microbiome studies and meta-analyses using PALM*. Submitted.
 
 ## Author
 
@@ -65,7 +64,7 @@ meta.result <- palm(rel.abd = rel.abd, covariate.interest = covariate.interest)
 
 ## Issues tracker
 
-Please use the [issues tracker](https://github.com/ZjpWei/PALM_package/issues) to report any bugs or give any suggestions.
+Please use the [issues tracker](https://github.com/ZjpWei/PALM_package/issues) to report any bugs or give any suggestions. Please feel free to contact me [Weizhou](mailto:zwei74@wisc.edu?subject=[GitHub]%20Melody%20paper%20analysis).
 
 ## License
 

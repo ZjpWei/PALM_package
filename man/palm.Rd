@@ -12,7 +12,8 @@ palm(
   depth = NULL,
   depth.filter = 0,
   prev.filter = 0.1,
-  p.adjust.method = "fdr"
+  p.adjust.method = "fdr",
+  correct = TRUE
 )
 }
 \arguments{
@@ -42,6 +43,8 @@ The default is NULL, in which case the sequencing depth is calculated as the row
 less than or equal to the cutoff. This cutoff is applied to each study. So, a feature could be removed in a subset of the studies. The cutoff value must be in the range of 0-1. Default is 0.1.}
 
 \item{p.adjust.method}{p-value correction method, a character string, should be one of "holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr", "none". Default is "fdr".}
+
+\item{correct}{This argument takes the default value of TRUE. If TRUE, it will correct the compositional effect; If FALSE, it will not correct the compositional effect (i.e., directly use RA summary statistic to do analysis and output RA-level summary statistics).}
 }
 \value{
 Output a list with each component for a covariate of interest.
@@ -51,8 +54,8 @@ For the single-study analysis, the component includes the following elements:
 and summary statistics (association effect estimates and standard errors).}
 
 For the met-analysis of multiple association studies, the component includes the following elements:
-\item{palm_meta}{A data framework containing the overall association effect estimates, standard errors, p-values,
-and q-values and summary statistics (association effect estimates and standard errors) for an individual study.}
+\item{palm_meta}{A data framework containing overall association effect estimates, standard errors, p-values, and q-values for testing the overall effect;
+p-values and q-values for testing cross-study effect heterogeneity; and summary statistics (association effect estimates and standard errors) for individual studies.}
 }
 \description{
 Implementation of PALM for single-study association analysis and meta-analysis across
@@ -86,5 +89,5 @@ meta.result <- palm(rel.abd = rel.abd, covariate.interest = covariate.interest)
 \code{\link{palm.meta.summary}}
 }
 \author{
-Zhoujingpeng Wei, Qilin Hong, Guanhua Chen, Tina V. Hartert, Christian Rosas-Salazar, Suman R. Das, and Zheng-Zheng Tang.
+Zhoujingpeng Wei <zwei74@wisc.edu>.
 }

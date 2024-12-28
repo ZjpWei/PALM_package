@@ -4,7 +4,7 @@
 #' multiple studies. This function conducts feature-level association testing, evaluating one covariate
 #' of interest at a time.
 #'
-#' @author Zhoujingpeng Wei, Qilin Hong, Guanhua Chen, Tina V. Hartert, Christian Rosas-Salazar, Suman R. Das, and Zheng-Zheng Tang.
+#' @author Zhoujingpeng Wei <zwei74@wisc.edu>.
 #'
 #' @param rel.abd For a single association study, provide a matrix of relative abundance counts, with sample IDs as row names and microbial feature IDs as column names. The matrix must not contain any missing values.
 #' For a meta-analysis, provide a list of such matrices, where each element corresponds to one study, and the name of each element represents the study ID.
@@ -25,6 +25,7 @@
 #' @param prev.filter A cutoff value remove microbial features with prevalence (proportion of nonzero observations)
 #' less than or equal to the cutoff. This cutoff is applied to each study. So, a feature could be removed in a subset of the studies. The cutoff value must be in the range of 0-1. Default is 0.1.
 #' @param p.adjust.method p-value correction method, a character string, should be one of "holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr", "none". Default is "fdr".
+#' @param correct This argument takes the default value of TRUE. If TRUE, it will correct the compositional effect; If FALSE, it will not correct the compositional effect (i.e., directly use RA summary statistic to do analysis and output RA-level summary statistics).
 #'
 #' @return Output a list with each component for a covariate of interest.
 #'
@@ -33,8 +34,8 @@
 #' and summary statistics (association effect estimates and standard errors).}
 #'
 #' For the met-analysis of multiple association studies, the component includes the following elements:
-#' \item{palm_meta}{A data framework containing the overall association effect estimates, standard errors, p-values,
-#' and q-values and summary statistics (association effect estimates and standard errors) for an individual study.}
+#' \item{palm_meta}{A data framework containing overall association effect estimates, standard errors, p-values, and q-values for testing the overall effect;
+#' p-values and q-values for testing cross-study effect heterogeneity; and summary statistics (association effect estimates and standard errors) for individual studies.}
 #'
 #' @seealso \code{\link{palm.get.summary}},
 #' \code{\link{palm.null.model}},
@@ -71,7 +72,8 @@ palm <- function(rel.abd,
                  depth = NULL,
                  depth.filter = 0,
                  prev.filter = 0.1,
-                 p.adjust.method = "fdr"
+                 p.adjust.method = "fdr",
+                 correct = TRUE
 ) {
 
   #=== Generate summary statistics ===#
@@ -83,7 +85,8 @@ palm <- function(rel.abd,
 
   summary.stats <- palm.get.summary(null.obj = null.obj,
                                     covariate.interest = covariate.interest,
-                                    cluster = cluster)
+                                    cluster = cluster,
+                                    correct = correct)
 
   # Meta-analysis
   palm.model <- palm.meta.summary(summary.stats = summary.stats, p.adjust.method = p.adjust.method)

@@ -6,7 +6,7 @@ Author: Zhoujingpeng Wei
 Maintainer: Zhoujingpeng Wei <zwei74@wisc.edu>
 Description: This R package implements a quasi-Poisson-based framework designed for robust, scalable, and reproducible identification of covariate-associated microbial features in large-scale microbiome association studies and meta-analyses.
 Data: 2024-11-23
-Reference: Zhoujingpeng Wei, Qilin Hong, Guanhua Chen, Tina V. Hartert, Christian Rosas-Salazar, Suman R. Das, and Zheng-Zheng Tang. Fast and reliable association discovery in large-scale microbiome studies and meta-analyses using PALM.
+Reference: Wei et al. 'Fast and reliable association discovery in large-scale microbiome studies and meta-analyses using PALM'. Submitted.
 License: GPL (>= 3) | file LICENSE
 LinkingTo: Rcpp, RcppArmadillo
 Imports:

@@ -63,23 +63,19 @@ palm.meta.summary <- function(summary.stats = summary.stats, p.adjust.method = "
                      dimnames = list(feature.ID, as.character(study.ID)))
 
     for(d in study.ID){
-      min.delta <- median(- summary.stats[[d]]$est[,cov.int], na.rm = TRUE)
       non.na <- !is.na(summary.stats[[d]]$est[,cov.int])
-      median.var <- 0
-      beta.coef <- summary.stats[[d]]$est[non.na,cov.int] + min.delta
-
-      pval <- 1 - pchisq(beta.coef^2 / (summary.stats[[d]]$var[non.na,cov.int] + sum(summary.stats[[d]]$var[non.na,cov.int])/sum(non.na)^2), df = 1)
+      beta.coef <- summary.stats[[d]]$est[non.na,cov.int]
+      var.coef <- summary.stats[[d]]$var[non.na,cov.int]
+      pval <- 1 - pchisq(beta.coef^2 / (var.coef + sum(var.coef)/sum(non.na)^2), df = 1)
       qval <- p.adjust(p = pval, method = p.adjust.method)
       palm_fits[[d]] <- data.frame(feature = names(beta.coef),
                                    coef = beta.coef,
-                                   stderr = sqrt(summary.stats[[d]]$var[non.na,cov.int] + sum(summary.stats[[d]]$var[non.na,cov.int])/sum(non.na)^2),
+                                   stderr = sqrt(var.coef + sum(var.coef)/sum(non.na)^2),
                                    pval = pval,
-                                   qval = qval,
-                                   Study_effect = summary.stats[[d]]$est[non.na,cov.int],
-                                   Study_stderr = sqrt(summary.stats[[d]]$var[non.na,cov.int]))
+                                   qval = qval)
 
       AA.est[names(beta.coef),d] <- beta.coef
-      AA.var[names(beta.coef),d] <- summary.stats[[d]]$var[non.na,cov.int] + sum(summary.stats[[d]]$var[non.na,cov.int])/sum(non.na)^2
+      AA.var[names(beta.coef),d] <- var.coef + sum(var.coef)/sum(non.na)^2
     }
 
     if(length(study.ID) > 1){
@@ -116,10 +112,11 @@ palm.meta.summary <- function(summary.stats = summary.stats, p.adjust.method = "
                               qval.het = qval.het)
 
       for(d in study.ID){
+        non.na <- !is.na(summary.stats[[d]]$est[,cov.int])
         meta_fits[[paste0(d, "_effect")]] <- summary.stats[[d]]$est[,cov.int]
-        meta_fits[[paste0(d, "_stderr")]] <- sqrt(summary.stats[[d]]$var[,cov.int])
+        meta_fits[[paste0(d, "_stderr")]] <- sqrt(summary.stats[[d]]$var[,cov.int] +
+                                                    sum(summary.stats[[d]]$var[non.na,cov.int])/sum(non.na)^2)
       }
-
       rownames(meta_fits) <- NULL
       palm.meta[[cov.int]] <- meta_fits
     }else{

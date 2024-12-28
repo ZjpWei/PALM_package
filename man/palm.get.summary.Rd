@@ -4,13 +4,13 @@
 \alias{palm.get.summary}
 \title{Generate palm summary statistics for individual studies.}
 \usage{
-palm.get.summary(null.obj, covariate.interest, cluster = NULL)
+palm.get.summary(null.obj, covariate.interest, cluster = NULL, correct = TRUE)
 }
 \arguments{
 \item{null.obj}{The output of function "palm.null.model".}
 
-\item{...}{See function palm in "covariate.interest" and "cluster",
-the order of samples should be matched with the order in "rel.abd" used in the "palm.null.model" function.}
+\item{...}{See function palm. In "covariate.interest" and "cluster", the order of samples should be matched
+with the order in "rel.abd" used in the "palm.null.model" function.}
 }
 \value{
 Output a list with each component for a study. The component includes the following elements.

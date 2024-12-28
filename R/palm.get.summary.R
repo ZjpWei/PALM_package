@@ -5,8 +5,8 @@
 #' The output can be directly used by the function "plam.meta.summary" to perform meta-analysis.
 #'
 #' @param null.obj The output of function "palm.null.model".
-#' @param ... See function palm in "covariate.interest" and "cluster",
-#' the order of samples should be matched with the order in "rel.abd" used in the "palm.null.model" function.
+#' @param ... See function palm. In "covariate.interest" and "cluster", the order of samples should be matched
+#' with the order in "rel.abd" used in the "palm.null.model" function.
 #'
 #' @return Output a list with each component for a study. The component includes the following elements.
 #' \item{est}{A matrix contains the relative-abundance association coefficient estimates for the study. The row names are microbial feature IDs
@@ -48,7 +48,8 @@
 
 palm.get.summary <- function(null.obj,
                              covariate.interest,
-                             cluster = NULL) {
+                             cluster = NULL,
+                             correct = TRUE) {
 
   #=== Check input data ===#
   if(length(null.obj) == 1){
@@ -137,6 +138,20 @@ palm.get.summary <- function(null.obj,
                                   SUB_id = SUB.id,
                                   study_ID = study.ID, feature_ID = feature.ID, Cov_int_info = Cov.int.info,
                                   Sample_info = Sample.info)
+
+  ## Correct summary statistics
+  if(correct){
+    covariate.interest <- unique(unlist(lapply(summary.stat.study, function(d){colnames(d$est)})))
+    for(cov.int in covariate.interest){
+      for(d in study.ID){
+        if(cov.int %in% colnames(summary.stat.study[[d]]$est)){
+          min.delta <- median( - summary.stat.study[[d]]$est[,cov.int], na.rm = TRUE)
+          non.na <- !is.na(summary.stat.study[[d]]$est[,cov.int])
+          summary.stat.study[[d]]$est[non.na,cov.int] <- summary.stat.study[[d]]$est[non.na,cov.int] + min.delta
+        }
+      }
+    }
+  }
 
   return(summary.stat.study)
 }

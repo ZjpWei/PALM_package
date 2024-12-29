@@ -1,4 +1,4 @@
-#' @title Meta-analysis for selecting microbial features associated with covariate of interests.
+#' @title Meta-analysis for feature-level association testing for each covariate of interest.
 #'
 #' @description Implementation of PALM for single-study association analysis and meta-analysis across
 #' multiple studies. This function conducts feature-level association testing, evaluating one covariate

@@ -1,7 +1,7 @@
 #' @title Meta-analyze summary statistics across studies
 #'
 #' @description This function directly takes the summary statistics output from the "palm.get.summary"
-#' function and combines the summary statistics across studies for selecting microbial features associated with each covariate of interest.
+#' function and combines the summary statistics across studies for feature-level association testing for each covariate of interest.
 #'
 #' @param summary.stats The output of function "palm.get.summary".
 #' @param ... See function palm.
@@ -65,7 +65,7 @@ palm.meta.summary <- function(summary.stats = summary.stats, p.adjust.method = "
     for(d in study.ID){
       non.na <- !is.na(summary.stats[[d]]$est[,cov.int])
       beta.coef <- summary.stats[[d]]$est[non.na,cov.int]
-      var.coef <- summary.stats[[d]]$var[non.na,cov.int]
+      var.coef <- (summary.stats[[d]]$stderr[non.na,cov.int])^2
       pval <- 1 - pchisq(beta.coef^2 / (var.coef + sum(var.coef)/sum(non.na)^2), df = 1)
       qval <- p.adjust(p = pval, method = p.adjust.method)
       palm_fits[[d]] <- data.frame(feature = names(beta.coef),
@@ -114,8 +114,8 @@ palm.meta.summary <- function(summary.stats = summary.stats, p.adjust.method = "
       for(d in study.ID){
         non.na <- !is.na(summary.stats[[d]]$est[,cov.int])
         meta_fits[[paste0(d, "_effect")]] <- summary.stats[[d]]$est[,cov.int]
-        meta_fits[[paste0(d, "_stderr")]] <- sqrt(summary.stats[[d]]$var[,cov.int] +
-                                                    sum(summary.stats[[d]]$var[non.na,cov.int])/sum(non.na)^2)
+        meta_fits[[paste0(d, "_stderr")]] <- sqrt((summary.stats[[d]]$stderr[,cov.int])^2 +
+                                                    sum((summary.stats[[d]]$stderr[non.na,cov.int])^2)/sum(non.na)^2)
       }
       rownames(meta_fits) <- NULL
       palm.meta[[cov.int]] <- meta_fits

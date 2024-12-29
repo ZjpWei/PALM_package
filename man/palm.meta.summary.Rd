@@ -16,7 +16,7 @@ Same output as the function "palm" when performing meta-analysis.
 }
 \description{
 This function directly takes the summary statistics output from the "palm.get.summary"
-function and combines the summary statistics across studies for selecting microbial features associated with each covariate of interest.
+function and combines the summary statistics across studies for feature-level association testing for each covariate of interest.
 }
 \examples{
 \donttest{

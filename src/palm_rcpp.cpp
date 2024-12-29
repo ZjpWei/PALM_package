@@ -253,12 +253,12 @@ List palm_rcpp(
     CharacterVector cov_int_nm = Cov_int_info[d];
     LogicalMatrix kp_sample_id = Sample_info[d];
     NumericMatrix est_mat = na_matrix(K, cov_int_nm.size());
-    NumericMatrix cov_mat = na_matrix(K, cov_int_nm.size());
+    NumericMatrix std_err = na_matrix(K, cov_int_nm.size());
 
     colnames(est_mat) = cov_int_nm;
     rownames(est_mat) = feature_ID;
-    colnames(cov_mat) = cov_int_nm;
-    rownames(cov_mat) = feature_ID;
+    colnames(std_err) = cov_int_nm;
+    rownames(std_err) = feature_ID;
 
     List null_obj_d = null_obj[d];
     List cov_int_d = covariate_interest[d];
@@ -342,13 +342,13 @@ List palm_rcpp(
         String a = feature_idd[j];
         int tmp_id = which_character(feature_ID, a);
         est_mat(tmp_id, cov_name_idx) = ests[j];
-        cov_mat(tmp_id, cov_name_idx) = covs[j];
+        std_err(tmp_id, cov_name_idx) = sqrt(covs[j]);
       }
     }
 
     List summary_stat_study_one = List::create(
       Named("est") = est_mat,
-      Named("var") = cov_mat,
+      Named("stderr") = std_err,
       Named("n") = est_mat.nrow()
     );
 

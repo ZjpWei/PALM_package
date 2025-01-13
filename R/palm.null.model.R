@@ -153,7 +153,7 @@ palm.null.model <- function(rel.abd,
     rownames(X.sub) <- rownames(Y.sub)
 
     ## Apply prevalence filter for each study.
-    feature.set.filter <- colSums(Y.sub != 0) > prev.filter
+    feature.set.filter <- colMeans(Y.sub != 0) > prev.filter
     Y.sub <- Y.sub[,feature.set.filter,drop=FALSE]
     feature.ids <- colnames(Y.sub)
 

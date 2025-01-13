@@ -165,7 +165,7 @@ df.scatter <- palm.df %>% ggplot(aes(x=feature, y=coef)) +
 plot_grid(df.scatter, df.bar, nrow = 1, align = 'h',  rel_widths = c(0.73, 0.27))
 ```
 
-The figure below shows dots representing study-level association effect estimates with lines indicating the 95% confidence intervals.
+The figure below shows dots representing study-level association effect estimates with lines indicating the 95% confidence intervals. The PALM effect estimates show good consistency across studies.
 
 ```{r, warning=FALSE, fig.align="center"}
 df.plot <- NULL
@@ -345,7 +345,7 @@ df.scatter <- palm.df %>% ggplot(aes(x=feature, y=coef)) +
 plot_grid(df.scatter, df.bar, nrow = 1, align = 'h',  rel_widths = c(0.62, 0.38))
 ```
 
-The following figure displays the features associated with butyrate production with $q$-value $\leq 0.05$. The dots in the scatter plot represent the study-level association effect estimates, and the lines indicate 95% confidence intervals.
+The following figure displays the features associated with butyrate production with $q$-value $\leq 0.05$. The dots in the scatter plot represent the study-level association effect estimates, and the lines indicate 95% confidence intervals. The PALM effect estimates show good consistency across studies.
 
 ```{r, fig.width=6, fig.height=12, warning=FALSE, fig.align="center"}
 ## summarize HMDB0000039 analysis

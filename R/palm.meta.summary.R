@@ -66,16 +66,18 @@ palm.meta.summary <- function(summary.stats = summary.stats, p.adjust.method = "
       non.na <- !is.na(summary.stats[[d]]$est[,cov.int])
       beta.coef <- summary.stats[[d]]$est[non.na,cov.int]
       var.coef <- (summary.stats[[d]]$stderr[non.na,cov.int])^2
-      pval <- 1 - pchisq(beta.coef^2 / (var.coef + sum(var.coef)/sum(non.na)^2), df = 1)
+      adjust.part <- sum(non.na) / (2 * sum(1 / sqrt(2*pi) / summary.stats[[d]]$stderr[non.na,cov.int]))^2
+
+      pval <- 1 - pchisq(beta.coef^2 / (var.coef + adjust.part), df = 1)
       qval <- p.adjust(p = pval, method = p.adjust.method)
       palm_fits[[d]] <- data.frame(feature = names(beta.coef),
                                    coef = beta.coef,
-                                   stderr = sqrt(var.coef + sum(var.coef)/sum(non.na)^2),
+                                   stderr = sqrt(var.coef + adjust.part),
                                    pval = pval,
                                    qval = qval)
 
       AA.est[names(beta.coef),d] <- beta.coef
-      AA.var[names(beta.coef),d] <- var.coef + sum(var.coef)/sum(non.na)^2
+      AA.var[names(beta.coef),d] <- var.coef + adjust.part
     }
 
     if(length(study.ID) > 1){
@@ -113,9 +115,10 @@ palm.meta.summary <- function(summary.stats = summary.stats, p.adjust.method = "
 
       for(d in study.ID){
         non.na <- !is.na(summary.stats[[d]]$est[,cov.int])
+        adjust.part <- sum(non.na) / (2 * sum(1 / sqrt(2*pi) / summary.stats[[d]]$stderr[non.na,cov.int]))^2
+
         meta_fits[[paste0(d, "_effect")]] <- summary.stats[[d]]$est[,cov.int]
-        meta_fits[[paste0(d, "_stderr")]] <- sqrt((summary.stats[[d]]$stderr[,cov.int])^2 +
-                                                    sum((summary.stats[[d]]$stderr[non.na,cov.int])^2)/sum(non.na)^2)
+        meta_fits[[paste0(d, "_stderr")]] <- sqrt((summary.stats[[d]]$stderr[,cov.int])^2 + adjust.part)
       }
       rownames(meta_fits) <- NULL
       palm.meta[[cov.int]] <- meta_fits

@@ -23,7 +23,7 @@ vignette: >
 
 This R package implements `PALM` [1], a quasi-Poisson-based framework designed for robust, scalable, and reproducible identification of covariate-associated microbial features in large-scale microbiome association studies and meta-analyses. The package can perform single-study association analysis and meta-analysis across multiple studies. This tutorial provides examples demonstrating meta-analysis.
 
-Figure. 1 shows the  schematic overview of PALM for meta-analysis. In a meta-analysis, PALM takes microbiome RA count data for $K$, the covariate of interest, and any confounders that need to be adjusted for in each study as input to perform study-level analysis. For each feature in each study, PALM generates summary association statistics, including the estimate of the covariate effect on the AA of the feature and the variance of the estimate. These summary statistics across studies are finally combined to perform association testing in meta-analysis. Covariate-associated microbial features are selected based on the test $p$-values accounting for multiple testing.
+Figure. 1 shows the  schematic overview of PALM for meta-analysis. For each study, PALM takes RA count data of microbial features, sequencing depth, the covariate of interest, and any confounders that need to be adjusted for as input to generate AA-level summary statistics. Specifically, for each feature, PALM first fits a quasi-Poisson null model (without the covariate), then calculates score statistics based on the null model output and the covariate, and finally constructs the RA-level summary statistics (i.e., RA association effect estimate and variance) based on the score statistics. Next, PALM corrects the compositional effect using the RA-level summary statistics of all features to derive AA-level summary statistics. The forest plot illustrates the AA-level summary statistics for a feature. These summary statistics can be combined via meta-analysis to obtain the overall effect estimate, variance, and p-value. Covariate-associated microbial features are selected based on the test p-values, accounting for multiple testing across features.
 
 ```{r, echo=FALSE, fig.cap="Schematic overview of PALM for meta-analysis.", fig.align="center"}
 knitr::include_graphics("./Intro.png")
@@ -91,7 +91,7 @@ for(d in unique(CRC_meta$Study)){
 }
 
 # palm analysis
-meta.result <- palm(rel.abd = rel.abd, covariate.interest = covariate.interest)
+meta.result <- palm(rel.abd = rel.abd, covariate.interest = covariate.interest, prev.filter = 0)
 ```
 
 The table below presents results for 20 microbial features, including overall association effect estimates, standard errors, p-values, and q-values for testing the overall effect; p-values and q-values for testing cross-study effect heterogeneity; and summary statistics (association effect estimates and standard errors) for individual studies.
@@ -223,10 +223,10 @@ If the datasets of different studies live in different locations and cannot be c
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 ## Generate summary statistics for each study
-null.obj.FR <- palm.null.model(rel.abd = rel.abd$`FR-CRC`)
+null.obj.FR <- palm.null.model(rel.abd = rel.abd$`FR-CRC`, prev.filter = 0)
 summary.stats.FR <- palm.get.summary(null.obj = null.obj.FR, covariate.interest = covariate.interest$`FR-CRC`)
 
-null.obj.DE <- palm.null.model(rel.abd = rel.abd$`DE-CRC`)
+null.obj.DE <- palm.null.model(rel.abd = rel.abd$`DE-CRC`, prev.filter = 0)
 summary.stats.DE <- palm.get.summary(null.obj = null.obj.DE, covariate.interest = covariate.interest$`DE-CRC`)
 ```
 

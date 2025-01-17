@@ -35,7 +35,7 @@ for(d in unique(CRC_meta$Study)){
 }
 
 # palm analysis
-meta.result <- palm(rel.abd = rel.abd, covariate.interest = covariate.interest)
+meta.result <- palm(rel.abd = rel.abd, covariate.interest = covariate.interest, prev.filter = 0)
 
 ## -----------------------------------------------------------------------------
 meta.result$disease %>% dplyr::slice(1:20) %>% 
@@ -154,10 +154,10 @@ g.PALM
 
 ## ----echo=TRUE, message=FALSE, warning=FALSE----------------------------------
 ## Generate summary statistics for each study
-null.obj.FR <- palm.null.model(rel.abd = rel.abd$`FR-CRC`)
+null.obj.FR <- palm.null.model(rel.abd = rel.abd$`FR-CRC`, prev.filter = 0)
 summary.stats.FR <- palm.get.summary(null.obj = null.obj.FR, covariate.interest = covariate.interest$`FR-CRC`)
 
-null.obj.DE <- palm.null.model(rel.abd = rel.abd$`DE-CRC`)
+null.obj.DE <- palm.null.model(rel.abd = rel.abd$`DE-CRC`, prev.filter = 0)
 summary.stats.DE <- palm.get.summary(null.obj = null.obj.DE, covariate.interest = covariate.interest$`DE-CRC`)
 
 ## ----echo=TRUE, message=FALSE, warning=FALSE----------------------------------

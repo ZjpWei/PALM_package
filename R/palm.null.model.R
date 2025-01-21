@@ -9,7 +9,7 @@
 #'
 #' @return Output a list with each component for a study. The component includes the following elements.
 #' \item{Y_I}{A matrix of predicted abundance.}
-#' \item{Y_R}{A matrix of abundance residual.}
+#' \item{Y_R}{A matrix of Firth's bias corrected abundance residual.}
 #' \item{Z}{Cleaned ad formatted covariate.adjust.}
 #' \item{rm.sample.idx}{The index of the removed samples for the study.}
 #'
@@ -171,6 +171,7 @@ palm.null.model <- function(rel.abd,
       est.single[,paste0(":XV_", ncol(X.sub)-1)] <- 0
     }
 
+    Y_b <- matrix(0, nrow = nrow(Y.sub), ncol = ncol(Y.sub), dimnames = list(rownames(Y.sub), colnames(Y.sub)))
     for(k in 1:ncol(Y.sub)){
       # Try brglmFit model
       suppressWarnings(
@@ -196,6 +197,10 @@ palm.null.model <- function(rel.abd,
         if(glm.out.tmp$converged){
           names(glm.out.tmp$coefficients) <- paste0(":", names(glm.out.tmp$coefficients))
           est.single[k,names(glm.out.tmp$coefficients)] <- glm.out.tmp$coefficients
+
+          ## compute the bias part
+          Qmat <- qr.Q(glm.out.tmp$qr)
+          Y_b[,k] <- 0.5 * rowSums(Qmat * Qmat)
         }else{
           warning("Cannot converge for feature ", feature.ids[k],
                   ", remove this taxa in nul model.\n")
@@ -211,6 +216,7 @@ palm.null.model <- function(rel.abd,
     non_na_taxa <- which(!is.na(rowSums(est.single)))
     est.single <- est.single[non_na_taxa,,drop=FALSE]
     Y.sub <- Y.sub[,non_na_taxa,drop=FALSE]
+    Y_b <- Y_b[,non_na_taxa,drop=FALSE]
 
     #=== Summarize null model output ===#
     Y_R <- NULL
@@ -224,6 +230,7 @@ palm.null.model <- function(rel.abd,
       Y_I <- rbind(Y_I, Y_I.i)
       Y_R <- rbind(Y_R, Y.sub[i,] - Y_I.i)
     }
+    Y_R <- Y_R + Y_b
     rownames(Y_I) <- rownames(Y.sub)
     rownames(Y_R) <- rownames(Y.sub)
     reg.fit.one <- list(Y_I = Y_I, Y_R = Y_R, Z = X.sub, rm.sample.idx = rm.sample.idx[[d]])

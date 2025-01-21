@@ -18,7 +18,7 @@ palm.null.model(
 \value{
 Output a list with each component for a study. The component includes the following elements.
 \item{Y_I}{A matrix of predicted abundance.}
-\item{Y_R}{A matrix of abundance residual.}
+\item{Y_R}{A matrix of Firth's bias corrected abundance residual.}
 \item{Z}{Cleaned ad formatted covariate.adjust.}
 \item{rm.sample.idx}{The index of the removed samples for the study.}
 }

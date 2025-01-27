@@ -144,9 +144,14 @@ palm.get.summary <- function(null.obj,
     for(cov.int in covariate.interest){
       for(d in study.ID){
         if(cov.int %in% colnames(summary.stat.study[[d]]$est)){
+          ## adjust estimates
           min.delta <- median( - summary.stat.study[[d]]$est[,cov.int], na.rm = TRUE)
           non.na <- !is.na(summary.stat.study[[d]]$est[,cov.int])
           summary.stat.study[[d]]$est[non.na,cov.int] <- summary.stat.study[[d]]$est[non.na,cov.int] + min.delta
+
+          ## adjust variances
+          adjust.part <- sum(non.na) / (2 * sum(1 / sqrt(2*pi) / summary.stat.study[[d]]$stderr[non.na,cov.int]))^2
+          summary.stat.study[[d]]$stderr[non.na,cov.int] <- sqrt((summary.stat.study[[d]]$stderr[non.na,cov.int])^2 + adjust.part)
         }
       }
     }

@@ -171,9 +171,9 @@ meta.result.2 <- palm.meta.summary(summary.stats = summary.stats.merge)
 ## ----echo=TRUE, message=FALSE, warning=FALSE----------------------------------
 ## Load metabolite data: 
 ## You may see the following website on how to directly load data from 
-## github into R https://github.com/ZjpWei/Melody/raw/main/Metabolite.rda
+## github into R https://github.com/ZjpWei/PALM/raw/main/Metabolite.rda
 options(timeout = 300)
-load(file = url("https://github.com/ZjpWei/Melody/raw/main/Metabolite.rda"))
+load(file = url("https://github.com/ZjpWei/PALM/raw/main/Metabolite.rda"))
 
 ## Change genera names
 for(d in names(otu_data_lst)){

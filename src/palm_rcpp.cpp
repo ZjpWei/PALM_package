@@ -348,8 +348,7 @@ List palm_rcpp(
 
     List summary_stat_study_one = List::create(
       Named("est") = est_mat,
-      Named("stderr") = std_err,
-      Named("n") = est_mat.nrow()
+      Named("stderr") = std_err
     );
 
     summary_stat_study[d] = summary_stat_study_one;

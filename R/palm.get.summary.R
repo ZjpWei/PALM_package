@@ -131,12 +131,15 @@ palm.get.summary <- function(null.obj,
     Cov.int.info[[d]] <- cov.int.nm
   }
 
-
   ## Get summary statistics by palm_rcpp
   summary.stat.study <- palm_rcpp(null_obj = null.obj, covariate_interest = covariate.interest,
                                   SUB_id = SUB.id,
                                   study_ID = study.ID, feature_ID = feature.ID, Cov_int_info = Cov.int.info,
                                   Sample_info = Sample.info)
+
+  for(d in study.ID){
+    summary.stat.study[[d]]$n <- nrow(covariate.interest[[d]])
+  }
 
   ## Correct summary statistics
   if(correct){

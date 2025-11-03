@@ -44,8 +44,8 @@ less than or equal to the cutoff. This cutoff is applied to each study. So, a fe
 
 \item{p.adjust.method}{p-value correction method, a character string, should be one of "holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr", "none". Default is "fdr".}
 
-\item{correct}{This argument takes the default value of "median". If "median", it will correct the compositional effect by median of estimates; If NULL, it will not correct the compositional effect (i.e., directly use RA summary statistic to do analysis and output RA-level summary statistics);
-If "tune", it will not correct the compositional effect by tuned value.}
+\item{correct}{This argument takes the default value of "median". If "median", it will correct the compositional effect by median of estimates; If "tune", it will correct the compositional effect by tuned value;
+If NULL, it will not correct the compositional effect (i.e., directly use RA summary statistic to do analysis and output RA-level summary statistics).}
 }
 \value{
 Output a list with each component for a covariate of interest.

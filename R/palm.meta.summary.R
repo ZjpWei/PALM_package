@@ -12,7 +12,7 @@
 #' \code{\link{palm.get.summary}},
 #' \code{\link{palm}}
 #'
-#' @import dplyr
+#' @import dplyr abess
 #' @export
 #'
 #' @examples
@@ -107,6 +107,14 @@ palm.meta.summary <- function(summary.stats = summary.stats, p.adjust.method = "
                               qval = qval.sin,
                               pval.het = pval.het,
                               qval.het = qval.het)
+
+      if(sum(meta_fits$qval <= 0.05, na.rm = TRUE) >= nrow(AA.est) * 0.2){
+        paste0(
+          "Over 20% of features are significant (FDR ≤ 0.05) for the covariate of interest '",
+          cov.int,
+          "'. Consider setting `correct = 'tune'` before meta-analysis."
+        )
+      }
 
       for(d in study.ID){
         meta_fits[[paste0(d, "_effect")]] <- summary.stats[[d]]$est[,cov.int]

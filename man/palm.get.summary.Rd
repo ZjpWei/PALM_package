@@ -4,7 +4,12 @@
 \alias{palm.get.summary}
 \title{Generate palm summary statistics for individual studies.}
 \usage{
-palm.get.summary(null.obj, covariate.interest, cluster = NULL, correct = TRUE)
+palm.get.summary(
+  null.obj,
+  covariate.interest,
+  cluster = NULL,
+  correct = "median"
+)
 }
 \arguments{
 \item{null.obj}{The output of function "palm.null.model".}

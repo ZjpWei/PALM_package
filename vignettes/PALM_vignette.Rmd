@@ -218,6 +218,136 @@ if(!is.null(df.area)){
 g.PALM
 ```
 
+The summary statistics correct for compositional effects by default using the median of the estimated values. Alternatively, you can set correct = "tune", which adjusts the compositional effect using a tuned value. This option often performs better when certain features dominate the average proportion or many significant features present.
+
+```{r}
+# palm analysis
+meta.result <- palm(rel.abd = rel.abd, covariate.interest = covariate.interest, prev.filter = 0, correct = "tune")
+```
+
+The table below presents results for 20 microbial features, including overall association effect estimates, standard errors, p-values, and q-values for testing the overall effect; p-values and q-values for testing cross-study effect heterogeneity; and summary statistics (association effect estimates and standard errors) for individual studies.
+
+```{r}
+meta.result$disease %>% dplyr::slice(1:20) %>% 
+  mutate(across(where(is.numeric), ~ round(.x, digits = 4))) %>% 
+  datatable()
+```
+
+The figure below displays the features with $q$-value $≤ 0.05$. The dots in scatter plot represent the overall association effect estimates with lines indicating the 95% confidence intervals. The bar plot shows the $-\log_{10}(q\text{-value})$.
+
+```{r, warning=FALSE, fig.align="center"}
+## summarize results
+palm.df <- meta.result$disease %>% dplyr::filter(qval <= 0.05) %>%
+  dplyr::filter(coef > 0) %>% arrange(qval) %>%
+  dplyr::add_row(meta.result$disease %>% dplyr::filter(qval <= 0.05) %>%
+  dplyr::filter(coef < 0) %>% arrange(desc(qval))) %>%
+  dplyr::transmute(feature = factor(feature, levels = feature), coef, stderr, qval, sig = (qval <= 0.05),
+                   dir = case_when(coef > 0 & qval <= 0.05 ~ "pos",
+                                   coef < 0 & qval <= 0.05 ~ "neg",
+                                   TRUE ~ "other")) %>% arrange(desc(row_number()))  
+
+## generate bar plot
+df.bar <- palm.df %>% ggplot(aes(x=feature, y=-log10(qval), fill= sig)) +
+      geom_bar(stat="identity") + ylim(0, 2.5) + scale_fill_manual(
+        breaks = c(TRUE, FALSE), values = c("grey50", "grey80")) +
+      geom_hline(aes(yintercept = -log10(0.05)),colour="#990000", linetype="dashed") +
+      theme_minimal() + coord_flip() + ylab("-log10 (q-value)") +
+         theme(axis.title.x = element_text(size = 10),
+               axis.title.y = element_blank(),
+               axis.ticks = element_blank(),
+               panel.grid = element_blank(),
+               plot.title = element_text(hjust = 0.5, size = 20),
+               panel.background = element_rect(fill=NULL, colour='black', linewidth = 1),
+               axis.text.y = element_blank(),
+               axis.text.x =  element_text(size = 10),
+               legend.title = element_text(hjust = 0.5, size = 16),
+               legend.text = element_text(size = 10),
+               legend.position = "none",
+               legend.direction = "vertical",
+               legend.box = "vertical",
+               strip.text = element_blank())
+
+## generate scatter plot
+df.scatter <- palm.df %>% ggplot(aes(x=feature, y=coef)) +
+      geom_errorbar(aes(ymin = coef - 1.96 * stderr, ymax = coef + 1.96 * stderr), color = "grey80",
+                    width = 0, linewidth = 0.5) +
+      geom_point(aes(color = dir), pch = 18, size = 2.5) + ylim(-3, 3) +
+      geom_hline(aes(yintercept = 0),colour="#990000", linetype="dashed") +
+      theme_minimal() + scale_color_manual(
+        breaks = c("pos", "other", "neg"),
+        values = c("red", "grey80", "blue")) +
+      coord_flip() + ylab("Meta Coefficients") +
+  theme(axis.title.x = element_text(size = 10),
+        axis.title.y = element_text(size = 10),
+        axis.ticks = element_blank(),
+        panel.grid = element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 20),
+        panel.background = element_rect(fill=NULL, colour='black', linewidth = 1),
+        axis.text.y = element_text(size = 10),
+        axis.text.x =  element_text(size = 10),
+        legend.title = element_text(hjust = 0.5, size = 16),
+        legend.text = element_text(size = 10),
+        legend.position = "none",
+        legend.direction = "vertical",
+        legend.box = "vertical",
+        strip.text = element_blank())
+
+## plot
+plot_grid(df.scatter, df.bar, nrow = 1, align = 'h',  rel_widths = c(0.73, 0.27))
+```
+The figure below shows dots representing study-level association effect estimates with lines indicating the 95% confidence intervals. The PALM effect estimates show good consistency across studies.
+
+```{r, warning=FALSE, fig.align="center"}
+df.plot <- NULL
+df.area <- NULL
+for(l in palm.df$feature){
+    df.plot <- rbind(df.plot, tibble(feature = factor(l, levels = levels(palm.df$feature)), 
+                                     Study = c("FR-CRC", "DE-CRC"),
+                                     AA = c(meta.result$disease[meta.result$disease$feature == l, "FR-CRC_effect"],
+                                            meta.result$disease[meta.result$disease$feature == l, "DE-CRC_effect"]),
+                                     ci = 1.96 * c(meta.result$disease[meta.result$disease$feature == l, "FR-CRC_stderr"],
+                                                   meta.result$disease[meta.result$disease$feature == l, "DE-CRC_stderr"])))
+    if(meta.result$disease[meta.result$disease$feature == l, "qval.het"] <= 0.1){
+      df.area <- rbind(df.area, tibble(species = l, AA = 0))
+  }
+}
+
+g.PALM <- df.plot %>% ggplot(aes(x = feature, y= AA)) +
+    geom_errorbar(aes(ymin = AA - ci, ymax = AA + ci, group = Study),
+                  position = position_dodge(width = 0.6),
+                  width = 0, linewidth = 0.5) +
+    geom_point(pch = 18, aes(color = Study),
+               size = 2.5, position = position_dodge(width = 0.6)) +
+    theme_minimal() + ylab("PALM\nCoefficients") +
+    coord_flip() +
+    geom_hline(aes(yintercept = 0),colour="#990000", linetype="dashed") +
+    ylim(-8, 4.5) +
+    theme(axis.title.y = element_text(size = 13),
+          axis.title.x = element_text(size = 13),
+          axis.ticks = element_blank(),
+          panel.grid = element_blank(),
+          panel.background = element_rect(fill=NULL, colour='black', linewidth = 1),
+          axis.text.y = element_text(size = 13),
+          axis.text.x = element_text(size = 13),
+          legend.title = element_text(hjust = 0.5, size = 16),
+          legend.text = element_text(size = 13),
+          legend.position = c(0.2, 0.85),
+          legend.direction = "vertical",
+          legend.box = "vertical",
+          strip.text = element_blank()) +
+    guides(color = guide_legend(reverse=T))
+
+if(!is.null(df.area)){
+  g.PALM <- g.PALM + geom_rect(data = df.area,
+                               aes(xmin = as.numeric(species) - 0.5,
+                                   xmax = as.numeric(species) + 0.5,
+                                   ymin = -Inf, ymax = Inf),
+                                   fill = "yellow", alpha = 0.2)
+}
+  
+g.PALM
+```
+
 # Meta-analysis given samples of one study at a time
 If the datasets of different studies live in different locations and cannot be conveniently shared among studies, we can first generate summary statistics for each study:
 

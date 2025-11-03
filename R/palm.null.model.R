@@ -233,7 +233,12 @@ palm.null.model <- function(rel.abd,
     Y_R <- Y_R + Y_b
     rownames(Y_I) <- rownames(Y.sub)
     rownames(Y_R) <- rownames(Y.sub)
-    reg.fit.one <- list(Y_I = Y_I, Y_R = Y_R, Z = X.sub, rm.sample.idx = rm.sample.idx[[d]])
+
+    if(max(colMeans(rel.abd[[d]] / rowSums(rel.abd[[d]]))) >= 0.9){
+      reg.fit.one <- list(Y_I = Y_I, Y_R = Y_R, Z = X.sub, rm.sample.idx = rm.sample.idx[[d]], abd = TRUE)
+    }else{
+      reg.fit.one <- list(Y_I = Y_I, Y_R = Y_R, Z = X.sub, rm.sample.idx = rm.sample.idx[[d]], abd = FALSE)
+    }
 
     #=== output ===#
     reg.fit[[d]] <- reg.fit.one

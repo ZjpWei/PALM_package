@@ -2,6 +2,6 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 palm_rcpp <- function(null_obj, covariate_interest, SUB_id, study_ID, feature_ID, Cov_int_info, Sample_info) {
-    .Call('_PALM_palm_rcpp', PACKAGE = 'PALM', null_obj, covariate_interest, SUB_id, study_ID, feature_ID, Cov_int_info, Sample_info)
+    .Call(`_PALM_palm_rcpp`, null_obj, covariate_interest, SUB_id, study_ID, feature_ID, Cov_int_info, Sample_info)
 }
 

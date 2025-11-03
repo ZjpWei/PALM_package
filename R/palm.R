@@ -25,7 +25,8 @@
 #' @param prev.filter A cutoff value remove microbial features with prevalence (proportion of nonzero observations)
 #' less than or equal to the cutoff. This cutoff is applied to each study. So, a feature could be removed in a subset of the studies. The cutoff value must be in the range of 0-1. Default is 0.1.
 #' @param p.adjust.method p-value correction method, a character string, should be one of "holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr", "none". Default is "fdr".
-#' @param correct This argument takes the default value of TRUE. If TRUE, it will correct the compositional effect; If FALSE, it will not correct the compositional effect (i.e., directly use RA summary statistic to do analysis and output RA-level summary statistics).
+#' @param correct This argument takes the default value of "median". If "median", it will correct the compositional effect by median of estimates; If NULL, it will not correct the compositional effect (i.e., directly use RA summary statistic to do analysis and output RA-level summary statistics);
+#' If "tune", it will not correct the compositional effect by tuned value.
 #'
 #' @return Output a list with each component for a covariate of interest.
 #'
@@ -73,7 +74,7 @@ palm <- function(rel.abd,
                  depth.filter = 0,
                  prev.filter = 0.1,
                  p.adjust.method = "fdr",
-                 correct = TRUE
+                 correct = "median"
 ) {
 
   #=== Generate summary statistics ===#

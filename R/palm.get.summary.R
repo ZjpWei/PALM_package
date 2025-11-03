@@ -48,7 +48,14 @@
 palm.get.summary <- function(null.obj,
                              covariate.interest,
                              cluster = NULL,
-                             correct = TRUE) {
+                             correct = "median") {
+
+  if (any(sapply(null.obj, function(d) d$abd))) {
+    correct <- NULL
+    warning(
+      "At least one study includes features with an average proportion larger than 90%. Forcing `correct = NULL`."
+    )
+  }
 
   #=== Check input data ===#
   if(length(null.obj) == 1){
@@ -60,8 +67,8 @@ palm.get.summary <- function(null.obj,
         stop("null.obj only includes one study, cluster should be a vector.")
       }
     }
-    covariate.interest <- list("Study" = covariate.interest)
-    cluster <- list("Study" = cluster)
+    covariate.interest <- setNames(list(covariate.interest), names(null.obj))
+    cluster <- setNames(list(cluster), names(null.obj))
   }
 
   study.ID <- names(null.obj)
@@ -141,24 +148,49 @@ palm.get.summary <- function(null.obj,
     summary.stat.study[[d]]$n <- nrow(covariate.interest[[d]])
   }
 
+  print(1)
   ## Correct summary statistics
-  if(correct){
+  if(!is.null(correct)){
     covariate.interest <- unique(unlist(lapply(summary.stat.study, function(d){colnames(d$est)})))
-    for(cov.int in covariate.interest){
-      for(d in study.ID){
-        if(cov.int %in% colnames(summary.stat.study[[d]]$est)){
-          ## adjust estimates
-          min.delta <- median( - summary.stat.study[[d]]$est[,cov.int], na.rm = TRUE)
-          non.na <- !is.na(summary.stat.study[[d]]$est[,cov.int])
-          summary.stat.study[[d]]$est[non.na,cov.int] <- summary.stat.study[[d]]$est[non.na,cov.int] + min.delta
+    if(correct == "median"){
+      for(cov.int in covariate.interest){
+        for(d in study.ID){
+          if(cov.int %in% colnames(summary.stat.study[[d]]$est)){
+            ## adjust estimates
+            min.delta <- median( - summary.stat.study[[d]]$est[,cov.int], na.rm = TRUE)
+            non.na <- !is.na(summary.stat.study[[d]]$est[,cov.int])
+            summary.stat.study[[d]]$est[non.na,cov.int] <- summary.stat.study[[d]]$est[non.na,cov.int] + min.delta
 
-          ## adjust variances
-          adjust.part <- sum(non.na) / (2 * sum(1 / sqrt(2*pi) / summary.stat.study[[d]]$stderr[non.na,cov.int]))^2
-          summary.stat.study[[d]]$stderr[non.na,cov.int] <- sqrt((summary.stat.study[[d]]$stderr[non.na,cov.int])^2 + adjust.part)
+            ## adjust variances
+            adjust.part <- sum(non.na) / (2 * sum(1 / sqrt(2*pi) / summary.stat.study[[d]]$stderr[non.na,cov.int]))^2
+            summary.stat.study[[d]]$stderr[non.na,cov.int] <- sqrt((summary.stat.study[[d]]$stderr[non.na,cov.int])^2 + adjust.part)
+          }
+        }
+      }
+    }else{
+      for(cov.int in covariate.interest){
+        summary.score.RA <- lapply(summary.stat.study, function(d){
+          if(cov.int %in% colnames(d$est)){
+            return(list(est = d$est[,cov.int,drop=FALSE], stderr = d$stderr[,cov.int,drop=FALSE], n = d$n))
+          }
+        })
+        PALM_tune <- palm_tune(summary.stats = summary.score.RA, output.best.one = TRUE, verbose = FALSE)
+        names(PALM_tune[[1]]$delta) <- names(summary.score.RA)
+
+        for(d in study.ID){
+          if(cov.int %in% colnames(summary.stat.study[[d]]$est)){
+            ## adjust estimates
+            min.delta <- PALM_tune[[1]]$delta[d]
+            non.na <- !is.na(summary.stat.study[[d]]$est[,cov.int])
+            summary.stat.study[[d]]$est[non.na,cov.int] <- summary.stat.study[[d]]$est[non.na,cov.int] + min.delta
+
+            ## adjust variances
+            adjust.part <- sum(non.na) / (2 * sum(1 / sqrt(2*pi) / summary.stat.study[[d]]$stderr[non.na,cov.int]))^2
+            summary.stat.study[[d]]$stderr[non.na,cov.int] <- sqrt((summary.stat.study[[d]]$stderr[non.na,cov.int])^2 + adjust.part)
+          }
         }
       }
     }
   }
-
   return(summary.stat.study)
 }

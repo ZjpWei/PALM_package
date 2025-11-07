@@ -4,23 +4,24 @@
 \alias{palm.meta.summary}
 \title{Meta-analyze summary statistics across studies}
 \usage{
-palm.meta.summary(summary.stats = summary.stats, p.adjust.method = "fdr")
+palm.meta.summary(summary.stats, p.adjust.method = "fdr", meta.method = "EE")
 }
 \arguments{
-\item{summary.stats}{The output of function "palm.get.summary".}
+\item{summary.stats}{The output object from the \code{palm.get.summary} function.}
 
-\item{...}{See function palm.}
+\item{...}{Additional arguments passed to \code{palm}.}
 }
 \value{
-Same output as the function "palm" when performing meta-analysis.
+An object with the same structure as the output of the \code{palm} function when performing meta-analysis.
 }
 \description{
-This function directly takes the summary statistics output from the "palm.get.summary"
-function and combines the summary statistics across studies for feature-level association testing for each covariate of interest.
+This function takes the summary statistics output from the \code{palm.get.summary} function
+and combines the results across studies to perform feature-level association testing
+for each covariate of interest.
 }
 \examples{
 \donttest{
-library("PALM")
+library(PALM)
 data("CRC_data", package = "PALM")
 CRC_abd <- CRC_data$CRC_abd
 CRC_meta <- CRC_data$CRC_meta
@@ -28,21 +29,21 @@ CRC_meta <- CRC_data$CRC_meta
 ########## Generate summary statistics ##########
 rel.abd <- list()
 covariate.interest <- list()
-for(d in unique(CRC_meta$Study)){
-  rel.abd[[d]] <- CRC_abd[CRC_meta$Sample_ID[CRC_meta$Study == d],]
+for (d in unique(CRC_meta$Study)) {
+  rel.abd[[d]] <- CRC_abd[CRC_meta$Sample_ID[CRC_meta$Study == d], ]
   disease <- as.numeric(CRC_meta$Group[CRC_meta$Study == d] == "CRC")
   names(disease) <- CRC_meta$Sample_ID[CRC_meta$Study == d]
-  covariate.interest[[d]] <- matrix(disease, ncol = 1, dimnames = list(names(disease), "disease"))
+  covariate.interest[[d]] <- matrix(disease, ncol = 1,
+                                    dimnames = list(names(disease), "disease"))
 }
 
 null.obj <- palm.null.model(rel.abd = rel.abd)
-
-summary.stats <- palm.get.summary(null.obj = null.obj, covariate.interest = covariate.interest)
+summary.stats <- palm.get.summary(null.obj = null.obj,
+                                  covariate.interest = covariate.interest)
 
 ########## Meta-analysis ##########
 meta.result <- palm.meta.summary(summary.stats = summary.stats)
 }
-
 }
 \seealso{
 \code{\link{palm.null.model}},

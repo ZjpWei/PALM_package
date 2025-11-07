@@ -2,7 +2,7 @@
 % Please edit documentation in R/palm.null.model.R
 \name{palm.null.model}
 \alias{palm.null.model}
-\title{Get information from the null model.}
+\title{Get information from the null model}
 \usage{
 palm.null.model(
   rel.abd,
@@ -13,37 +13,37 @@ palm.null.model(
 )
 }
 \arguments{
-\item{...}{See function palm}
+\item{...}{Additional arguments passed to \code{palm}.}
 }
 \value{
-Output a list with each component for a study. The component includes the following elements.
-\item{Y_I}{A matrix of predicted abundance.}
-\item{Y_R}{A matrix of Firth's bias corrected abundance residual.}
-\item{Z}{Cleaned ad formatted covariate.adjust.}
-\item{rm.sample.idx}{The index of the removed samples for the study.}
+A list containing one component per study. Each component includes the following elements:
+\item{Y_I}{A matrix of predicted abundances.}
+\item{Y_R}{A matrix of abundance residuals.}
+\item{Z}{The cleaned and formatted \code{covariate.adjust}.}
+\item{rm.sample.idx}{Indices of the samples removed from the study.}
 }
 \description{
-The "palm.null.model" function computes the estimated mean microbial feature proportions and residuals
-of the relative abundance under the null model of no associations for each study (so this function does not need the
-covariate.interest information). The output of this function will be fed into the "palm.get.summary" function to
-construct summary statistics for covariates of interest in each study.
+The \code{palm.null.model} function computes the estimated mean microbial feature
+proportions and residuals of the relative abundances under the null model for each study.
+This function does not require the \code{covariate.interest} information.
+The output of this function is used as input for the \code{palm.get.summary} function
+to construct summary statistics for the covariates of interest in each study.
 }
 \examples{
 \donttest{
-library("PALM")
+library(PALM)
 data("CRC_data", package = "PALM")
 CRC_abd <- CRC_data$CRC_abd
 CRC_meta <- CRC_data$CRC_meta
 
 ########## Generate summary statistics ##########
 rel.abd <- list()
-for(d in unique(CRC_meta$Study)){
-  rel.abd[[d]] <- CRC_abd[CRC_meta$Sample_ID[CRC_meta$Study == d],]
+for (d in unique(CRC_meta$Study)) {
+  rel.abd[[d]] <- CRC_abd[CRC_meta$Sample_ID[CRC_meta$Study == d], ]
 }
 
 null.obj <- palm.null.model(rel.abd = rel.abd)
 }
-
 }
 \seealso{
 \code{\link{palm.get.summary}},

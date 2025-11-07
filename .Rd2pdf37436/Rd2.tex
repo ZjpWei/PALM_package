@@ -1,0 +1,403 @@
+\nonstopmode{}
+\documentclass[a4paper]{book}
+\usepackage[times,inconsolata,hyper]{Rd}
+\usepackage{makeidx}
+\makeatletter\@ifl@t@r\fmtversion{2018/04/01}{}{\usepackage[utf8]{inputenc}}\makeatother
+% \usepackage{graphicx} % @USE GRAPHICX@
+\makeindex{}
+\begin{document}
+\chapter*{}
+\begin{center}
+{\textbf{\huge Package `PALM'}}
+\par\bigskip{\large \today}
+\end{center}
+\ifthenelse{\boolean{Rd@use@hyper}}{\hypersetup{pdftitle = {PALM: Fast and reliable association discovery in large-scale microbiome studies and meta-analyses}}}{}
+\begin{description}
+\raggedright{}
+\item[Type]\AsIs{Package}
+\item[Title]\AsIs{Fast and reliable association discovery in large-scale microbiome studies and meta-analyses}
+\item[Version]\AsIs{0.1.0}
+\item[Author]\AsIs{Zhoujingpeng Wei}
+\item[Maintainer]\AsIs{Zhoujingpeng Wei }\email{zwei74@wisc.edu}\AsIs{}
+\item[Description]\AsIs{This R package implements a quasi-Poisson-based framework designed for robust, scalable, and reproducible identification of covariate-associated microbial features in large-scale microbiome association studies and meta-analyses.}
+\item[Data]\AsIs{2025-11-06}
+\item[Reference]\AsIs{Wei et al. 'Fast and reliable association discovery in large-scale microbiome studies and meta-analyses using PALM'. Submitted.}
+\item[License]\AsIs{GPL (>= 3) | file LICENSE}
+\item[LinkingTo]\AsIs{Rcpp, RcppArmadillo}
+\item[Imports]\AsIs{MASS (>= 7.3-60),
+metafor (>= 4.8.0),
+abess (>= 0.4.10),
+dplyr (>= 1.1.4),
+brglm2 (>= 0.9.2),
+Rcpp (>= 1.0.14),
+RcppArmadillo (>= 14.2.2-1)}
+\item[Encoding]\AsIs{UTF-8}
+\item[LazyData]\AsIs{true}
+\item[RoxygenNote]\AsIs{7.3.2}
+\item[Suggests]\AsIs{knitr,
+rmarkdown}
+\item[Depends]\AsIs{R (>= 4.3.0)}
+\item[VignetteBuilder]\AsIs{knitr}
+\end{description}
+\Rdcontents{Contents}
+\HeaderA{CRC\_data}{Datasets from two metagenomics studies of colorectal cancer (CRC)}{CRC.Rul.data}
+\keyword{datasets}{CRC\_data}
+%
+\begin{Description}
+The "CRC\_data" includes "CRC\_abd" and "CRC\_meta". "CRC\_abd" is a sample-by-feature matrix of
+relative abundance counts from the two studies including 267 species under order "Clostridiales".
+The "CRC\_meta" is a data frame including the sample-level variables from the two studies.
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+data(CRC_data)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Format}
+An object of class \code{list} of length 2.
+\end{Format}
+%
+\begin{Source}
+<https://github.com/zellerlab/crc\_meta>
+\end{Source}
+%
+\begin{References}
+Wirbel, Jakob et al. Nat Med. 2019 Apr;25(4):679-689.
+\end{References}
+%
+\begin{Examples}
+\begin{ExampleCode}
+
+library("PALM")
+data("CRC_data")
+CRC_abd <- CRC_data$CRC_abd
+CRC_meta <- CRC_data$CRC_meta
+
+
+\end{ExampleCode}
+\end{Examples}
+\HeaderA{palm}{Meta-analysis for feature-level association testing for each covariate of interest}{palm}
+%
+\begin{Usage}
+\begin{verbatim}
+palm(
+  rel.abd,
+  covariate.interest,
+  covariate.adjust = NULL,
+  cluster = NULL,
+  depth = NULL,
+  depth.filter = 0,
+  prev.filter = 0.1,
+  p.adjust.method = "fdr",
+  meta.method = "EE",
+  correct = "median"
+)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{rel.abd}] For a single association study, provide a matrix of relative abundance counts,
+with sample IDs as row names and microbial feature IDs as column names.
+The matrix must not contain any missing values.
+For a meta-analysis, provide a list of such matrices, where each element corresponds
+to one study, and the name of each element represents the study ID.
+
+\item[\code{covariate.interest}] For a single association study, provide a matrix where rows represent samples
+and columns represent numeric covariates of interest. The order of samples must match the order in \code{rel.abd},
+and the matrix must not contain any missing values.
+For a meta-analysis, provide a list of such matrices, where each element corresponds to one study,
+and the name of each element represents the study ID. The set of covariates may differ across studies.
+
+\item[\code{covariate.adjust}] For a single association study, provide a data frame where rows represent samples
+and columns represent covariates to be adjusted for in the model. Covariates must be either factors or numeric vectors.
+The order of samples must match the order in \code{rel.abd}, and the data frame must not contain missing values.
+For a meta-analysis, provide a list of such data frames, where each element corresponds to one study,
+and the name of each element represents the study ID. The set of covariates may differ across studies.
+The default is \code{NULL}, meaning no covariates are adjusted.
+
+\item[\code{cluster}] For a single association study with correlated samples, provide a vector defining
+the sample clusters. The order of samples in the vector must match the order in \code{rel.abd}.
+For example, the values may represent subject IDs if each subject has multiple correlated samples
+(e.g., in a longitudinal study).
+For a meta-analysis, provide a list of such vectors, where each element pertains to one study with correlated samples,
+and the name of each element represents the study ID. The order of samples in each vector must match the order in
+\code{rel.abd} for the corresponding study.
+The default is \code{NULL}, assuming all samples across all studies are independent.
+
+\item[\code{depth}] For a single association study, provide a vector representing the sequencing depth for each sample.
+The length of the vector must match the number of samples, and the order must align with \code{rel.abd}.
+For a meta-analysis, provide a list of such vectors, where each element corresponds to one study,
+and the name of each element represents the study ID.
+The default is \code{NULL}, in which case the sequencing depth is calculated as the row sums of \code{rel.abd}.
+
+\item[\code{depth.filter}] A cutoff value used to remove samples with sequencing depth less than or equal to the cutoff.
+Default is \code{0}.
+
+\item[\code{prev.filter}] A cutoff value to remove microbial features with prevalence (proportion of nonzero observations)
+less than or equal to the cutoff. This cutoff is applied to each study, so a feature may be removed in a subset of studies.
+The cutoff value must be in the range \code{0–1}. Default is \code{0.1}.
+
+\item[\code{p.adjust.method}] Character string specifying the multiple testing correction method.
+Options include \code{"holm"}, \code{"hochberg"}, \code{"hommel"}, \code{"bonferroni"}, \code{"BH"},
+\code{"BY"}, \code{"fdr"}, and \code{"none"}. See \code{?stats::p.adjust} for more details.
+
+\item[\code{meta.method}] Character string specifying whether an equal-effects or random-effects model should be fitted.
+An equal-effects model is fitted when \code{method = "EE"}.
+A random-effects model is fitted by setting \code{method} to one of the following:
+\code{"DL"}, \code{"HE"}, \code{"HS"}, \code{"HSk"}, \code{"SJ"}, \code{"ML"}, \code{"REML"},
+\code{"EB"}, \code{"PM"}, \code{"GENQ"}, \code{"PMM"}, or \code{"GENQM"}.
+The default is \code{"EE"}. See \code{?metafor::rma} for more details.
+
+\item[\code{correct}] Compositional effect correction method. The default is \code{"median"}.
+If \code{"median"}, the compositional effect is corrected using the median of the estimates.
+If \code{"tune"}, the compositional effect is corrected using a data-driven tuned value.
+If \code{NULL}, no compositional correction is applied (i.e., the analysis uses relative-abundance summary
+statistics directly and outputs RA-level summary statistics).
+Recommendation: For sparse signals (≤ 20
+For moderately dense signals (> 20
+Both methods assume that the proportion of differential AA features is < 50
+
+\end{ldescription}
+
+A list containing one component for each covariate of interest.
+
+For single-study analysis, the component includes:
+
+
+For meta-analysis across multiple studies, the component includes:
+
+
+
+Implements the PALM framework for both single-study association analysis and
+meta-analysis across multiple studies. This function conducts feature-level
+association testing, evaluating one covariate of interest at a time.
+
+
+
+library(PALM)
+data("CRC\_data", package = "PALM")
+CRC\_abd <- CRC\_data\$CRC\_abd
+CRC\_meta <- CRC\_data\$CRC\_meta
+
+\#\#\#\#\#\#\#\#\#\# Generate summary statistics \#\#\#\#\#\#\#\#\#\#
+rel.abd <- list()
+covariate.interest <- list()
+for (d in unique(CRC\_meta\$Study)) \{
+  rel.abd[[d]] <- CRC\_abd[CRC\_meta\$Sample\_ID[CRC\_meta\$Study == d], ]
+  disease <- as.numeric(CRC\_meta\$Group[CRC\_meta\$Study == d] == "CRC")
+  names(disease) <- CRC\_meta\$Sample\_ID[CRC\_meta\$Study == d]
+  covariate.interest[[d]] <- matrix(disease, ncol = 1,
+                                    dimnames = list(names(disease), "disease"))
+\}
+
+meta.result <- palm(rel.abd = rel.abd, covariate.interest = covariate.interest)
+
+
+
+\code{\LinkA{palm.get.summary}{palm.get.summary}},
+\code{\LinkA{palm.null.model}{palm.null.model}},
+\code{\LinkA{palm.meta.summary}{palm.meta.summary}}
+
+
+Zhoujingpeng Wei <zwei74@wisc.edu>
+
+\end{Arguments}
+\HeaderA{palm.get.summary}{Generate PALM summary statistics for individual studies}{palm.get.summary}
+%
+\begin{Description}
+This function takes the output object from the \code{palm.null.model} function and
+constructs summary statistics for the covariates of interest in each study.
+The resulting output can be directly used as input to the \code{palm.meta.summary} function
+to perform meta-analysis.
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+palm.get.summary(
+  null.obj,
+  covariate.interest,
+  cluster = NULL,
+  correct = "median"
+)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{null.obj}] The output object from the \code{palm.null.model} function.
+
+\item[\code{...}] Additional arguments passed to \code{palm}.
+In \code{covariate.interest} and \code{cluster}, the order of samples must match
+the order in \code{rel.abd} used in the \code{palm.null.model} function.
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+A list containing one component per study. Each component includes the following elements:
+\begin{ldescription}
+\item[\code{est}] A matrix containing the association effect estimates for the study.
+Rows correspond to microbial feature IDs and columns correspond to covariate IDs.
+\item[\code{stderr}] A matrix containing the standard errors of the association effect estimates for the study.
+Rows correspond to microbial feature IDs and columns correspond to covariate IDs.
+\item[\code{n}] The sample size for the study.
+\end{ldescription}
+\end{Value}
+%
+\begin{SeeAlso}
+\code{\LinkA{palm.null.model}{palm.null.model}},
+\code{\LinkA{palm.meta.summary}{palm.meta.summary}},
+\code{\LinkA{palm}{palm}}
+\end{SeeAlso}
+%
+\begin{Examples}
+\begin{ExampleCode}
+
+library(PALM)
+data("CRC_data", package = "PALM")
+CRC_abd <- CRC_data$CRC_abd
+CRC_meta <- CRC_data$CRC_meta
+
+########## Generate summary statistics ##########
+rel.abd <- list()
+covariate.interest <- list()
+for (d in unique(CRC_meta$Study)) {
+  rel.abd[[d]] <- CRC_abd[CRC_meta$Sample_ID[CRC_meta$Study == d], ]
+  disease <- as.numeric(CRC_meta$Group[CRC_meta$Study == d] == "CRC")
+  names(disease) <- CRC_meta$Sample_ID[CRC_meta$Study == d]
+  covariate.interest[[d]] <- matrix(disease, ncol = 1,
+                                    dimnames = list(names(disease), "disease"))
+}
+
+null.obj <- palm.null.model(rel.abd = rel.abd)
+summary.stats <- palm.get.summary(null.obj = null.obj,
+                                  covariate.interest = covariate.interest)
+
+\end{ExampleCode}
+\end{Examples}
+\HeaderA{palm.meta.summary}{Meta-analyze summary statistics across studies}{palm.meta.summary}
+%
+\begin{Description}
+This function takes the summary statistics output from the \code{palm.get.summary} function
+and combines the results across studies to perform feature-level association testing
+for each covariate of interest.
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+palm.meta.summary(summary.stats, p.adjust.method = "fdr", meta.method = "EE")
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{summary.stats}] The output object from the \code{palm.get.summary} function.
+
+\item[\code{...}] Additional arguments passed to \code{palm}.
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+An object with the same structure as the output of the \code{palm} function when performing meta-analysis.
+\end{Value}
+%
+\begin{SeeAlso}
+\code{\LinkA{palm.null.model}{palm.null.model}},
+\code{\LinkA{palm.get.summary}{palm.get.summary}},
+\code{\LinkA{palm}{palm}}
+\end{SeeAlso}
+%
+\begin{Examples}
+\begin{ExampleCode}
+
+library(PALM)
+data("CRC_data", package = "PALM")
+CRC_abd <- CRC_data$CRC_abd
+CRC_meta <- CRC_data$CRC_meta
+
+########## Generate summary statistics ##########
+rel.abd <- list()
+covariate.interest <- list()
+for (d in unique(CRC_meta$Study)) {
+  rel.abd[[d]] <- CRC_abd[CRC_meta$Sample_ID[CRC_meta$Study == d], ]
+  disease <- as.numeric(CRC_meta$Group[CRC_meta$Study == d] == "CRC")
+  names(disease) <- CRC_meta$Sample_ID[CRC_meta$Study == d]
+  covariate.interest[[d]] <- matrix(disease, ncol = 1,
+                                    dimnames = list(names(disease), "disease"))
+}
+
+null.obj <- palm.null.model(rel.abd = rel.abd)
+summary.stats <- palm.get.summary(null.obj = null.obj,
+                                  covariate.interest = covariate.interest)
+
+########## Meta-analysis ##########
+meta.result <- palm.meta.summary(summary.stats = summary.stats)
+
+\end{ExampleCode}
+\end{Examples}
+\HeaderA{palm.null.model}{Get information from the null model}{palm.null.model}
+%
+\begin{Description}
+The \code{palm.null.model} function computes the estimated mean microbial feature
+proportions and residuals of the relative abundances under the null model for each study.
+This function does not require the \code{covariate.interest} information.
+The output of this function is used as input for the \code{palm.get.summary} function
+to construct summary statistics for the covariates of interest in each study.
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+palm.null.model(
+  rel.abd,
+  covariate.adjust = NULL,
+  depth = NULL,
+  depth.filter = 0,
+  prev.filter = 0.1
+)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{...}] Additional arguments passed to \code{palm}.
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+A list containing one component per study. Each component includes the following elements:
+\begin{ldescription}
+\item[\code{Y\_I}] A matrix of predicted abundances.
+\item[\code{Y\_R}] A matrix of abundance residuals.
+\item[\code{Z}] The cleaned and formatted \code{covariate.adjust}.
+\item[\code{rm.sample.idx}] Indices of the samples removed from the study.
+\end{ldescription}
+\end{Value}
+%
+\begin{SeeAlso}
+\code{\LinkA{palm.get.summary}{palm.get.summary}},
+\code{\LinkA{palm.meta.summary}{palm.meta.summary}},
+\code{\LinkA{palm}{palm}}
+\end{SeeAlso}
+%
+\begin{Examples}
+\begin{ExampleCode}
+
+library(PALM)
+data("CRC_data", package = "PALM")
+CRC_abd <- CRC_data$CRC_abd
+CRC_meta <- CRC_data$CRC_meta
+
+########## Generate summary statistics ##########
+rel.abd <- list()
+for (d in unique(CRC_meta$Study)) {
+  rel.abd[[d]] <- CRC_abd[CRC_meta$Sample_ID[CRC_meta$Study == d], ]
+}
+
+null.obj <- palm.null.model(rel.abd = rel.abd)
+
+\end{ExampleCode}
+\end{Examples}
+\printindex{}
+\end{document}

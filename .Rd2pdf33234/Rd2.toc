@@ -1,0 +1,5 @@
+\contentsline {subsection}{CRC\_data}{2}{page.2}
+\contentsline {subsection}{palm}{2}{page.2}
+\contentsline {subsection}{palm.get.summary}{4}{page.4}
+\contentsline {subsection}{palm.meta.summary}{5}{page.5}
+\contentsline {subsection}{palm.null.model}{6}{page.6}

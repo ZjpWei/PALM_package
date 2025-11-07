@@ -12,18 +12,18 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // palm_rcpp
-List palm_rcpp(List null_obj, List covariate_interest, List SUB_id, CharacterVector study_ID, CharacterVector feature_ID, List Cov_int_info, List Sample_info);
+Rcpp::List palm_rcpp(Rcpp::List null_obj, Rcpp::List covariate_interest, Rcpp::List SUB_id, Rcpp::CharacterVector study_ID, Rcpp::CharacterVector feature_ID, Rcpp::List Cov_int_info, Rcpp::List Sample_info);
 RcppExport SEXP _PALM_palm_rcpp(SEXP null_objSEXP, SEXP covariate_interestSEXP, SEXP SUB_idSEXP, SEXP study_IDSEXP, SEXP feature_IDSEXP, SEXP Cov_int_infoSEXP, SEXP Sample_infoSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< List >::type null_obj(null_objSEXP);
-    Rcpp::traits::input_parameter< List >::type covariate_interest(covariate_interestSEXP);
-    Rcpp::traits::input_parameter< List >::type SUB_id(SUB_idSEXP);
-    Rcpp::traits::input_parameter< CharacterVector >::type study_ID(study_IDSEXP);
-    Rcpp::traits::input_parameter< CharacterVector >::type feature_ID(feature_IDSEXP);
-    Rcpp::traits::input_parameter< List >::type Cov_int_info(Cov_int_infoSEXP);
-    Rcpp::traits::input_parameter< List >::type Sample_info(Sample_infoSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type null_obj(null_objSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type covariate_interest(covariate_interestSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type SUB_id(SUB_idSEXP);
+    Rcpp::traits::input_parameter< Rcpp::CharacterVector >::type study_ID(study_IDSEXP);
+    Rcpp::traits::input_parameter< Rcpp::CharacterVector >::type feature_ID(feature_IDSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type Cov_int_info(Cov_int_infoSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type Sample_info(Sample_infoSEXP);
     rcpp_result_gen = Rcpp::wrap(palm_rcpp(null_obj, covariate_interest, SUB_id, study_ID, feature_ID, Cov_int_info, Sample_info));
     return rcpp_result_gen;
 END_RCPP

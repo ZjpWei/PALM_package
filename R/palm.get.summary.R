@@ -1,21 +1,26 @@
-#' @title Generate palm summary statistics for individual studies.
+#' @title Generate PALM summary statistics for individual studies
 #'
-#' @description This function directly takes the output object from the "palm.null.model" function and
-#' constructs summary statistics for covariates of interest in each study.
-#' The output can be directly used by the function "plam.meta.summary" to perform meta-analysis.
+#' @description
+#' This function takes the output object from the \code{palm.null.model} function and
+#' constructs summary statistics for the covariates of interest in each study.
+#' The resulting output can be directly used as input to the \code{palm.meta.summary} function
+#' to perform meta-analysis.
 #'
-#' @param null.obj The output of function "palm.null.model".
-#' @param ... See function palm. In "covariate.interest" and "cluster", the order of samples should be matched
-#' with the order in "rel.abd" used in the "palm.null.model" function.
+#' @param null.obj The output object from the \code{palm.null.model} function.
+#' @param ... Additional arguments passed to \code{palm}.
+#' In \code{covariate.interest} and \code{cluster}, the order of samples must match
+#' the order in \code{rel.abd} used in the \code{palm.null.model} function.
 #'
-#' @return Output a list with each component for a study. The component includes the following elements.
-#' \item{est}{A matrix contains the association effect estimates for the study. The row names are microbial feature IDs
-#' and the column names are the covariates of interest IDs.}
-#' \item{stderr}{A matrix contains the standard errors of the association effect estimates for the study. The row names
-#' are microbial feature IDs and the column names are the covariates of interest IDs.}
-#' \item{n}{Sample size for the study.}
+#' @return
+#' A list containing one component per study. Each component includes the following elements:
+#' \item{est}{A matrix containing the association effect estimates for the study.
+#' Rows correspond to microbial feature IDs and columns correspond to covariate IDs.}
+#' \item{stderr}{A matrix containing the standard errors of the association effect estimates for the study.
+#' Rows correspond to microbial feature IDs and columns correspond to covariate IDs.}
+#' \item{n}{The sample size for the study.}
 #'
-#' @seealso \code{\link{palm.null.model}},
+#' @seealso
+#' \code{\link{palm.null.model}},
 #' \code{\link{palm.meta.summary}},
 #' \code{\link{palm}}
 #'
@@ -24,7 +29,7 @@
 #'
 #' @examples
 #' \donttest{
-#' library("PALM")
+#' library(PALM)
 #' data("CRC_data", package = "PALM")
 #' CRC_abd <- CRC_data$CRC_abd
 #' CRC_meta <- CRC_data$CRC_meta
@@ -32,18 +37,18 @@
 #' ########## Generate summary statistics ##########
 #' rel.abd <- list()
 #' covariate.interest <- list()
-#' for(d in unique(CRC_meta$Study)){
-#'   rel.abd[[d]] <- CRC_abd[CRC_meta$Sample_ID[CRC_meta$Study == d],]
+#' for (d in unique(CRC_meta$Study)) {
+#'   rel.abd[[d]] <- CRC_abd[CRC_meta$Sample_ID[CRC_meta$Study == d], ]
 #'   disease <- as.numeric(CRC_meta$Group[CRC_meta$Study == d] == "CRC")
 #'   names(disease) <- CRC_meta$Sample_ID[CRC_meta$Study == d]
-#'   covariate.interest[[d]] <- matrix(disease, ncol = 1, dimnames = list(names(disease), "disease"))
+#'   covariate.interest[[d]] <- matrix(disease, ncol = 1,
+#'                                     dimnames = list(names(disease), "disease"))
 #' }
 #'
-#'  null.obj <- palm.null.model(rel.abd = rel.abd)
-#'
-#'  summary.stats <- palm.get.summary(null.obj = null.obj, covariate.interest = covariate.interest)
+#' null.obj <- palm.null.model(rel.abd = rel.abd)
+#' summary.stats <- palm.get.summary(null.obj = null.obj,
+#'                                   covariate.interest = covariate.interest)
 #' }
-#'
 
 palm.get.summary <- function(null.obj,
                              covariate.interest,
@@ -148,7 +153,6 @@ palm.get.summary <- function(null.obj,
     summary.stat.study[[d]]$n <- nrow(covariate.interest[[d]])
   }
 
-  print(1)
   ## Correct summary statistics
   if(!is.null(correct)){
     covariate.interest <- unique(unlist(lapply(summary.stat.study, function(d){colnames(d$est)})))

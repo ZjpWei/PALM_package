@@ -1,356 +1,241 @@
+// [[Rcpp::plugins(cpp11)]]
 #include <RcppArmadillo.h>
-
-using namespace Rcpp;
+#include <unordered_map>
+#include <string>
+#include <cmath>
 
 // [[Rcpp::depends(RcppArmadillo)]]
-arma::cube setSlice(arma::cube M, const NumericMatrix& M1, int i) {
-  // Retrieve dimensions of M
-  int dim1 = M.n_rows;
-  int dim2 = M.n_cols;
-  int dim3 = M.n_slices;
 
-  // Validate slice index
-  if(i < 1 || i > dim1){
-    stop("Index i is out of bounds. It must be between 1 and %d.", dim1);
-  }
+using Rcpp::List;
+using Rcpp::NumericMatrix;
+using Rcpp::NumericVector;
+using Rcpp::CharacterVector;
+using Rcpp::LogicalMatrix;
+using Rcpp::LogicalVector;
+using Rcpp::IntegerVector;
+using Rcpp::Named;
+using Rcpp::as;
+using Rcpp::wrap;
+using Rcpp::stop;
 
-  // Validate dimensions of M1
-  if(M1.nrow() != dim2 || M1.ncol() != dim3){
-    stop("Dimensions of M1 must match (dim2 x dim3). Provided M1 has dimensions (%d x %d), but expected (%d x %d).",
-         M1.nrow(), M1.ncol(), dim2, dim3);
-  }
+// ---- Small utilities ---------------------------------------------------------
 
-  // Convert NumericMatrix M1 to arma::mat
-  arma::mat M1_arma = as<arma::mat>(M1);
-
-
-  // Adjust for 0-based indexing in C++
-  int i_idx = i - 1;
-
-  // Assign M1_arma to the i-th slice of M
-  // Perform element-wise assignment to the i-th slice
-  for(int j = 0; j < dim2; j++){
-    for(int k = 0; k < dim3; k++){
-      M(i_idx, j, k) = M1_arma(j, k);
-    }
-  }
-
-  return M;
+// Convert a LogicalVector mask to arma::uvec of 0-based row indices where TRUE.
+static inline arma::uvec mask_to_uvec(const LogicalVector &mask) {
+  std::vector<arma::uword> idx;
+  idx.reserve(mask.size());
+  for (int i = 0; i < mask.size(); ++i) if (mask[i]) idx.push_back(static_cast<arma::uword>(i));
+  return arma::uvec(idx);
 }
 
-NumericMatrix invert_matrix(NumericMatrix mat) {
-  // Convert R matrix to Armadillo matrix
-  arma::mat arma_mat = as<arma::mat>(mat);
+// Build a fast string->row index map for feature_ID.
+static inline std::unordered_map<std::string, int>
+  build_feature_index_map(const CharacterVector &feature_ID) {
+    std::unordered_map<std::string, int> mp;
+    mp.reserve(feature_ID.size() * 2);
+    for (int i = 0; i < feature_ID.size(); ++i) {
+      mp.emplace(Rcpp::as<std::string>(feature_ID[i]), i); // 0-based row index
+    }
+    return mp;
+  }
 
-  // Invert the matrix using Armadillo
-  arma::mat arma_inv = arma::inv(arma_mat);
-
-  // Convert back to R matrix
-  NumericMatrix inv_mat = wrap(arma_inv);
-
-  return inv_mat;
+// Fill a NumericMatrix with NA
+static inline void fill_na(NumericMatrix &M) {
+  std::fill(M.begin(), M.end(), Rcpp::NumericVector::get_na());
 }
 
-NumericMatrix subset_matrix(const NumericMatrix& mat,
-                            const IntegerVector& row_indices,
-                            const IntegerVector& col_indices) {
-  int nrows = row_indices.size();
-  int ncols = col_indices.size();
-
-  NumericMatrix result(nrows, ncols);
-
-  // Copy values
-  for (int i = 0; i < nrows; ++i) {
-    for (int j = 0; j < ncols; ++j) {
-      result(i, j) = mat(row_indices[i], col_indices[j]);
-    }
-  }
-
-  // Set row names if they exist
-  CharacterVector original_rownames = rownames(mat);
-  if (original_rownames.size() > 0) {
-    CharacterVector new_rownames(nrows);
-    for (int i = 0; i < nrows; ++i) {
-      new_rownames[i] = original_rownames[row_indices[i]];
-    }
-    rownames(result) = new_rownames;
-  }
-
-  // Set column names if they exist
-  CharacterVector original_colnames = colnames(mat);
-  if (original_colnames.size() > 0) {
-    CharacterVector new_colnames(ncols);
-    for (int j = 0; j < ncols; ++j) {
-      new_colnames[j] = original_colnames[col_indices[j]];
-    }
-    colnames(result) = new_colnames;
-  }
-
-  return result;
+// Safe solve with SPD hint; falls back to generic solve if needed.
+static inline arma::mat solve_spd(const arma::mat &A, const arma::mat &B) {
+  arma::mat X;
+  bool ok = arma::solve(X, A, B, arma::solve_opts::fast + arma::solve_opts::likely_sympd);
+  if (!ok) ok = arma::solve(X, A, B);
+  if (!ok) stop("Linear solve failed (matrix may be singular/ill-conditioned).");
+  return X;
 }
 
-NumericMatrix na_matrix(int n, int k){
-  NumericMatrix m(n,k) ;
-  std::fill( m.begin(), m.end(), NumericVector::get_na() ) ;
-  return m ;
+// ---- Core per-feature computation -------------------------------------------
+static inline void estimate_one_feature(
+    const arma::mat &X,
+    const arma::vec &yR,
+    const arma::vec &yI,
+    const arma::uword G,
+    const arma::uvec &gidx,
+    double &est_out,
+    double &var_out
+) {
+  const arma::uword n = X.n_rows;
+  const arma::uword p = X.n_cols;
+
+  // Scores per subject: S_i = x_i * yR_i   (n x p)
+  arma::mat S = X.each_col() % yR;
+
+  // Hessian: H = X' diag(yI) X = (X .* yI)^T * X   (p x p)
+  arma::mat H = (X.each_col() % yI).t() * X;
+
+  if (p == 0) stop("X has zero columns.");
+  const arma::uword beta_col = p - 1;
+
+  arma::uvec idx_beta(1); idx_beta[0] = beta_col;
+  arma::uvec idx_gamm;
+  if (p > 1) idx_gamm = arma::regspace<arma::uvec>(0, beta_col - 1);
+
+  const arma::mat Hbb = H(idx_beta, idx_beta);                   // 1x1
+  arma::mat I1;
+  if (p == 1) {
+    I1 = Hbb;
+  } else {
+    const arma::mat Hbg = H(idx_beta, idx_gamm);                // 1 x (p-1)
+    const arma::mat Hgg = H(idx_gamm, idx_gamm);                // (p-1) x (p-1)
+    I1 = Hbb - Hbg * solve_spd(Hgg, Hbg.t());                   // Schur complement
+  }
+
+  const arma::rowvec ssum = arma::sum(S, 0);                    // 1 x p
+  const double ssum_beta = ssum[beta_col];
+
+  arma::mat I1inv = solve_spd(I1, arma::eye(I1.n_rows, I1.n_cols)); // 1x1 inverse via solve
+  const double est_beta = (I1inv(0,0) * ssum_beta);
+
+  arma::vec U_beta(n, arma::fill::zeros);                       // per-observation adj. score
+
+  if (p == 1) {
+    U_beta = S.col(beta_col);
+  } else {
+    const arma::mat S_gamm = S.cols(idx_gamm);                  // n x (p-1)
+    const arma::mat Hgg     = H(idx_gamm, idx_gamm);
+
+    const arma::mat Hgg_inv_SgT = solve_spd(Hgg, S_gamm.t());   // (p-1) x n
+    const arma::mat Hbg         = H(idx_beta, idx_gamm);        // 1 x (p-1)
+
+    const arma::vec adjust = (Hbg * Hgg_inv_SgT).t();           // n x 1
+    U_beta = S.col(beta_col) - adjust;
+  }
+
+  arma::vec U_combined(G, arma::fill::zeros);
+  for (arma::uword i = 0; i < n; ++i) {
+    const arma::uword g = gidx[i];
+    if (g >= G) stop("Cluster index out of range.");
+    U_combined[g] += U_beta[i];
+  }
+
+  const double meat = arma::as_scalar(U_combined.t() * U_combined);
+  const double var_beta = I1inv(0,0) * meat * I1inv(0,0);
+
+  est_out = est_beta;
+  var_out = var_beta;
 }
 
-NumericMatrix create_matrix(NumericVector X) {
-  int n = X.size();
-  NumericMatrix mat(n, n);
-
-  for(int l = 0; l < n; ++l) {
-    for(int ll = 0; ll < n; ++ll) {
-      mat(l, ll) = X[l] * X[ll];
-    }
-  }
-
-  return mat;
-}
-
-int which_character(StringVector X, String a) {
-  for(int i = 0; i < X.size(); ++i) {
-    if(X[i] == a) {
-      return i; // R is 1-indexed
-    }
-  }
-  return NA_INTEGER; // Return NA if no match is found
-}
-
-NumericMatrix matrixMultiply(NumericMatrix M1, NumericMatrix M2) {
-  int n1_rows = M1.nrow();
-  int n1_cols = M1.ncol();
-  int n2_rows = M2.nrow();
-  int n2_cols = M2.ncol();
-
-  // Check if the number of columns in M1 equals the number of rows in M2
-  if (n1_cols != n2_rows) {
-    stop("Number of columns in M1 must equal number of rows in M2 for multiplication.");
-  }
-
-  // Initialize the output matrix with dimensions n1_rows x n2_cols
-  NumericMatrix M_output(n1_rows, n2_cols);
-
-  // Perform matrix multiplication
-  for(int i = 0; i < n1_rows; ++i) {
-    for(int j = 0; j < n2_cols; ++j) {
-      double sum = 0.0;
-      for(int k = 0; k < n1_cols; ++k) {
-        sum += M1(i, k) * M2(k, j);
-      }
-      M_output(i, j) = sum;
-    }
-  }
-
-  return M_output;
-}
-
-NumericMatrix matrixSubtract(NumericMatrix M1, NumericMatrix M2) {
-  int n1_rows = M1.nrow();
-  int n1_cols = M1.ncol();
-  int n2_rows = M2.nrow();
-  int n2_cols = M2.ncol();
-
-  // Check if dimensions match
-  if (n1_rows != n2_rows || n1_cols != n2_cols) {
-    stop("Matrices M1 and M2 must have the same dimensions for subtraction.");
-  }
-
-  // Initialize the output matrix with the same dimensions
-  NumericMatrix M_sub(n1_rows, n1_cols);
-
-  // Perform matrix subtraction
-  for(int i = 0; i < n1_rows; ++i) {
-    for(int j = 0; j < n1_cols; ++j) {
-      M_sub(i, j) = M1(i, j) - M2(i, j);
-    }
-  }
-
-  return M_sub;
-}
-
-NumericMatrix matrixAdd(NumericMatrix M1, NumericMatrix M2) {
-  int n1_rows = M1.nrow();
-  int n1_cols = M1.ncol();
-  int n2_rows = M2.nrow();
-  int n2_cols = M2.ncol();
-
-  // Check if dimensions match
-  if (n1_rows != n2_rows || n1_cols != n2_cols) {
-    stop("Matrices M1 and M2 must have the same dimensions for adding.");
-  }
-
-  // Initialize the output matrix with the same dimensions
-  NumericMatrix M_sub(n1_rows, n1_cols);
-
-  // Perform matrix subtraction
-  for(int i = 0; i < n1_rows; ++i) {
-    for(int j = 0; j < n1_cols; ++j) {
-      M_sub(i, j) = M1(i, j) + M2(i, j);
-    }
-  }
-
-  return M_sub;
-}
-
-NumericMatrix columnSumsMatrixCpp(NumericMatrix M) {
-  int n_rows = M.nrow();
-  int n_cols = M.ncol();
-
-  // Initialize the output matrix with n_cols rows and 1 column
-  NumericMatrix M_sub(n_cols, 1);
-
-  for(int j = 0; j < n_cols; ++j) {          // Iterate over columns
-    double sum = 0.0;
-    for(int i = 0; i < n_rows; ++i) {      // Iterate over rows
-      sum += M(i, j);
-    }
-    M_sub(j, 0) = sum;
-  }
-
-  // Optionally, assign a column name
-  M_sub.attr("dimnames") = List::create(
-    R_NilValue,                // No row names
-    CharacterVector::create("Sum") // Column name
-  );
-
-  return M_sub;
-}
-
-NumericMatrix transposeMatrix(NumericMatrix M) {
-  int n_rows = M.nrow();
-  int n_cols = M.ncol();
-
-  // Initialize the transposed matrix with dimensions n_cols x n_rows
-  NumericMatrix M_transposed(n_cols, n_rows);
-
-  // Perform the transposition
-  for(int i = 0; i < n_rows; ++i){
-    for(int j = 0; j < n_cols; ++j){
-      M_transposed(j, i) = M(i, j);
-    }
-  }
-
-  return M_transposed;
-}
+// ---- Main exported function --------------------------------------------------
 
 // [[Rcpp::export]]
-List palm_rcpp(
-    List null_obj,
-    List covariate_interest, // assuming covariate_interest is also passed as input
-    List SUB_id,
-    CharacterVector study_ID,
-    CharacterVector feature_ID,
-    List Cov_int_info,
-    List Sample_info
+Rcpp::List palm_rcpp(
+    Rcpp::List null_obj,
+    Rcpp::List covariate_interest,
+    Rcpp::List SUB_id,
+    Rcpp::CharacterVector study_ID,
+    Rcpp::CharacterVector feature_ID,
+    Rcpp::List Cov_int_info,
+    Rcpp::List Sample_info
 ) {
-  int K = feature_ID.size();
+  const int K = feature_ID.size();
+  auto feat_map = build_feature_index_map(feature_ID); // name -> row index
 
-  List summary_stat_study;
+  Rcpp::List summary_stat_study;
 
   for (int idx_d = 0; idx_d < study_ID.size(); ++idx_d) {
-    String d = study_ID[idx_d];
-    CharacterVector cov_int_nm = Cov_int_info[d];
-    LogicalMatrix kp_sample_id = Sample_info[d];
-    NumericMatrix est_mat = na_matrix(K, cov_int_nm.size());
-    NumericMatrix std_err = na_matrix(K, cov_int_nm.size());
+    const Rcpp::String d = study_ID[idx_d];
 
-    colnames(est_mat) = cov_int_nm;
-    rownames(est_mat) = feature_ID;
-    colnames(std_err) = cov_int_nm;
-    rownames(std_err) = feature_ID;
+    const CharacterVector cov_int_nm = Cov_int_info[d];
+    const LogicalMatrix   kp_sample_id = Sample_info[d];
 
-    List null_obj_d = null_obj[d];
-    List cov_int_d = covariate_interest[d];
-    NumericMatrix Y_R = as<NumericMatrix>(null_obj_d["Y_R"]);
-    NumericMatrix Y_I = as<NumericMatrix>(null_obj_d["Y_I"]);
-    NumericMatrix X = as<NumericMatrix>(null_obj_d["Z"]);
-    NumericVector SUBid = as<NumericVector>(SUB_id[d]);
+    NumericMatrix est_mat(K, cov_int_nm.size());
+    NumericMatrix std_err(K, cov_int_nm.size());
+    fill_na(est_mat);
+    fill_na(std_err);
+
+    Rcpp::colnames(est_mat) = cov_int_nm;
+    Rcpp::rownames(est_mat) = feature_ID;
+    Rcpp::colnames(std_err) = cov_int_nm;
+    Rcpp::rownames(std_err) = feature_ID;
+
+    const List null_obj_d = null_obj[d];
+    const List cov_int_d  = covariate_interest[d];
+
+    arma::mat Y_R = as<arma::mat>(null_obj_d["Y_R"]); // n x m
+    arma::mat Y_I = as<arma::mat>(null_obj_d["Y_I"]); // n x m
+    arma::mat X    = as<arma::mat>(null_obj_d["Z"]);  // n x p
+    arma::vec SUB  = as<arma::vec>(SUB_id[d]);        // n x 1 (1..G integers)
+
+    if (Y_R.n_rows != X.n_rows || Y_I.n_rows != X.n_rows)
+      stop("Row mismatch among Y_R, Y_I, and X in study %s.", std::string(d).c_str());
+
+    if (Y_R.n_rows != static_cast<arma::uword>(kp_sample_id.nrow()))
+      stop("Sample_info row count does not match data rows in study %s.", std::string(d).c_str());
+
+    if (kp_sample_id.ncol() != cov_int_nm.size())
+      stop("Sample_info columns do not match number of covariates in study %s.", std::string(d).c_str());
 
     for (int cov_name_idx = 0; cov_name_idx < cov_int_nm.size(); ++cov_name_idx) {
-      String cov_name = cov_int_nm[cov_name_idx];
+      const std::string cov_name = Rcpp::as<std::string>(cov_int_nm[cov_name_idx]);
 
-      LogicalVector kp_indices = kp_sample_id(_, cov_name_idx);
-      IntegerVector kp_indices_int = seq_along(kp_indices) - 1; // indices for subsetting
-      IntegerVector kp_indices_int_sub = kp_indices_int[kp_indices];
+      const LogicalVector keep_mask = kp_sample_id(Rcpp::_, cov_name_idx);
+      const arma::uvec rows = mask_to_uvec(keep_mask);
+      const arma::uword n_sub = rows.n_elem;
+      if (n_sub == 0) continue;
 
-      NumericMatrix Y_R_sub = subset_matrix(Y_R, kp_indices_int_sub, Range(0,Y_R.ncol()-1));
-      NumericMatrix Y_I_sub = subset_matrix(Y_I, kp_indices_int_sub, Range(0,Y_I.ncol()-1));
-      NumericMatrix X_sub = subset_matrix(X,kp_indices_int_sub, Range(0,X.ncol()-1));
-      NumericVector SUBid_sub = SUBid[kp_indices_int_sub];
+      arma::mat X_sub  = X.rows(rows);            // n_sub x p
+      arma::mat YR_sub = Y_R.rows(rows);          // n_sub x m
+      arma::mat YI_sub = Y_I.rows(rows);          // n_sub x m
+      arma::vec SUB_sub = SUB.elem(rows);         // n_sub x 1
 
-      NumericVector cov_col = as<NumericVector>(cov_int_d[cov_name]);
+      NumericVector cov_col_R = as<NumericVector>(cov_int_d[cov_name]);
+      if (cov_col_R.size() != static_cast<int>(n_sub))
+        stop("Length of covariate '%s' does not match subset size in study %s.",
+             cov_name.c_str(), std::string(d).c_str());
+      X_sub.col(X_sub.n_cols - 1) = as<arma::vec>(cov_col_R);
 
-      for (int i = 0; i < kp_indices_int_sub.size(); ++i) {
-        X_sub(i, X_sub.ncol() - 1) = cov_col[i];
+      arma::uvec gidx(n_sub);
+      arma::uword G = 0;
+      for (arma::uword i = 0; i < n_sub; ++i) {
+        const double v = SUB_sub[i];
+        if (v <= 0 || std::floor(v) != v) stop("SUB_id must be positive integers.");
+        const arma::uword gi = static_cast<arma::uword>(v) - 1; // 0-based
+        gidx[i] = gi;
+        if (gi + 1 > G) G = gi + 1;
       }
-      NumericVector ests, covs;
+      if (G == 0) G = 1;
 
-      List XX_lst(SUBid_sub.size());
-      for (int l = 0; l < SUBid_sub.size(); ++l) {
-        NumericMatrix XX = create_matrix(X_sub(l, _));
-        XX_lst[l] = XX;
-      }
+      const arma::uword m = YR_sub.n_cols;
+      if (YI_sub.n_cols != m) stop("Y_R and Y_I must have same number of columns.");
 
-      for (int k = 0; k < Y_I_sub.ncol(); ++k) {
-        NumericMatrix s_i_lst(max(SUBid_sub), X_sub.ncol());
-        NumericMatrix I_mat(X_sub.ncol(), X_sub.ncol());
+      // Get feature names from the (sub)set—same column order as originals
+      Rcpp::CharacterVector feat_names = Rcpp::colnames(Rcpp::as<Rcpp::NumericMatrix>(null_obj_d["Y_I"]));
+      if (feat_names.size() == 0)
+        stop("Y_I must have column names for feature mapping.");
 
-        for (int l = 0; l < SUBid_sub.size(); ++l) {
-          NumericVector temp_row = s_i_lst(SUBid_sub(l) - 1, _); // Extract the row
-          temp_row += Y_R_sub(l, k) * X_sub(l, _);               // Perform element-wise addition
-          s_i_lst(SUBid_sub(l) - 1, _) = temp_row;
+      for (arma::uword k = 0; k < m; ++k) {
+        double est = Rcpp::NumericVector::get_na();
+        double var = Rcpp::NumericVector::get_na();
 
-          NumericMatrix XX = XX_lst[l];
-          I_mat += Y_I_sub(l, k) * XX;
-        }
+        arma::vec yR_k = YR_sub.col(k);
+        arma::vec yI_k = YI_sub.col(k);
 
-        int beta_name = X_sub.ncol() - 1;
-        IntegerVector gamma_name = seq(0, X_sub.ncol() - 2);
+        estimate_one_feature(X_sub, yR_k, yI_k, G, gidx, est, var);
 
-        NumericMatrix I_gamma = subset_matrix(I_mat, gamma_name, gamma_name);
-        NumericMatrix I_beta(1, 1);
-        I_beta(0, 0) = I_mat(beta_name, beta_name);
-        NumericMatrix Inv_I_gamma = invert_matrix(I_gamma);
+        const std::string fname = Rcpp::as<std::string>(feat_names[k]);
+        auto it = feat_map.find(fname);
+        if (it == feat_map.end())
+          stop("Feature '%s' not found in feature_ID.", fname.c_str());
+        const int row = it->second; // 0-based
 
-        for (int l1 = 0; l1 < gamma_name.size(); ++l1) {
-          for (int l2 = 0; l2 < gamma_name.size(); ++l2) {
-            I_beta(0, 0) -= I_mat(beta_name, l1) * Inv_I_gamma(l1, l2) * I_mat(beta_name, l2);
-          }
-        }
-
-        double est = sum(s_i_lst(_, beta_name)) / I_beta(0, 0);
-        ests.push_back(est);
-
-        double core_U = 0;
-        for (int i = 0; i < s_i_lst.nrow(); ++i) {
-          double tmp_U = s_i_lst(i, beta_name);
-          for (int l1 = 0; l1 < gamma_name.size(); ++l1) {
-            for (int l2 = 0; l2 < gamma_name.size(); ++l2) {
-              tmp_U -= I_mat(beta_name, l1) * Inv_I_gamma(l1, l2) * s_i_lst(i, l2);
-            }
-          }
-          core_U += tmp_U * tmp_U;
-        }
-
-        double cov = core_U / (I_beta(0, 0) * I_beta(0, 0));
-        covs.push_back(cov);
-      }
-
-      CharacterVector feature_idd = colnames(Y_I_sub);
-      for (int j = 0; j < Y_I_sub.ncol(); ++j) {
-        String a = feature_idd[j];
-        int tmp_id = which_character(feature_ID, a);
-        est_mat(tmp_id, cov_name_idx) = ests[j];
-        std_err(tmp_id, cov_name_idx) = sqrt(covs[j]);
+        est_mat(row, cov_name_idx) = est;
+        std_err(row, cov_name_idx) = std::sqrt(var);
       }
     }
 
     List summary_stat_study_one = List::create(
-      Named("est") = est_mat,
+      Named("est")    = est_mat,
       Named("stderr") = std_err
     );
-
     summary_stat_study[d] = summary_stat_study_one;
   }
 

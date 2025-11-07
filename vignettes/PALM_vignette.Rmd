@@ -21,9 +21,9 @@ vignette: >
 
 # Introduction
 
-This R package implements `PALM` [1], a quasi-Poisson-based framework designed for robust, scalable, and reproducible identification of covariate-associated microbial features in large-scale microbiome association studies and meta-analyses. The package can perform single-study association analysis and meta-analysis across multiple studies. This tutorial provides examples demonstrating meta-analysis.
+This R package implements `PALM` [1], a quasi-Poisson-based framework for robust, scalable, and reproducible identification of covariate-associated microbial features in large-scale microbiome association studies and meta-analyses. The package supports both single-study association analysis and meta-analysis across multiple studies. This tutorial provides examples illustrating how to perform meta-analysis using PALM.
 
-Figure. 1 shows the  schematic overview of PALM for meta-analysis. For each study, PALM takes RA count data of microbial features, sequencing depth, the covariate of interest, and any confounders that need to be adjusted for as input to generate AA-level summary statistics. Specifically, for each feature, PALM first fits a quasi-Poisson null model (without the covariate), then calculates score statistics based on the null model output and the covariate, and finally constructs the RA-level summary statistics (i.e., RA association effect estimate and variance) based on the score statistics. Next, PALM corrects the compositional effect using the RA-level summary statistics of all features to derive AA-level summary statistics. The forest plot illustrates the AA-level summary statistics for a feature. These summary statistics can be combined via meta-analysis to obtain the overall effect estimate, variance, and p-value. Covariate-associated microbial features are selected based on the test p-values, accounting for multiple testing across features.
+`Figure 1` presents a schematic overview of the PALM framework for meta-analysis. For each study, PALM takes as input the relative-abundance (RA) count data of microbial features, sequencing depth, the covariate of interest, and any confounders to be adjusted for, and generates absolute-abundance (AA)–level summary statistics. Specifically, for each feature, PALM first fits a quasi-Poisson null model (excluding the covariate of interest), then computes score statistics based on the null model output and the covariate, and finally constructs RA-level summary statistics (i.e., RA association effect estimates and variances) from the score statistics. Next, PALM corrects for compositional effects using the RA-level summary statistics across all features to derive AA-level summary statistics. The forest plot illustrates the AA-level summary statistics for an example feature. These summary statistics are then combined across studies via meta-analysis to obtain the overall effect estimate, variance, and p-value. Covariate-associated microbial features are identified based on the resulting p-values, with multiple-testing correction applied across features.
 
 ```{r, echo=FALSE, fig.cap="Schematic overview of PALM for meta-analysis.", fig.align="center"}
 knitr::include_graphics("./Intro.png")
@@ -39,7 +39,7 @@ if(!require("PALM", quietly = TRUE)){
 }
 ```
 
-Load the required packages. 
+Load the required packages.
 
 ```{r load, echo=TRUE, message=FALSE, warning=FALSE}
 library("PALM")
@@ -47,6 +47,7 @@ library("ggplot2")
 library("cowplot")
 library("tidyverse")
 library("DT")
+library("htmltools")
 options(DT.options = list(
   initComplete = JS("function(settings, json) {",
   "$(this.api().table().header()).css({'background-color': 
@@ -55,21 +56,21 @@ options(DT.options = list(
 
 # Meta-analysis given all samples of all participating studies
 
-There are two approaches PALM can run meta-analysis. 
+There are two approaches PALM can run meta-analysis.
 
-Approach #1: If the individual-level sample data across all participating studies are available, the function `palm` can take these data as input to generate, harmonize, and combine summary association statistics across studies for fast and reliable identification of microbial features. 
+Approach #1: When individual-level sample data from all participating studies are available, the function palm can directly take these data as input to generate, harmonize, and combine summary association statistics across studies, enabling fast and reliable identification of covariate-associated microbial features.
 
-Approach #2: If individual-level samples of each study are not in a central place, summary statistics can be generated for each study separately using the functions `palm.null.model` and `palm.get.summary`. The summary statistics can be transported to a central place to be harmonized and combined for feature selection using the function `palm.meta.summary`.
+Approach #2: When individual-level data are not centrally available, summary statistics can be generated separately for each study using the functions `palm.null.model` and `palm.get.summary`. These summary statistics can then be transferred to a central location and combined for feature-level meta-analysis using the function `palm.meta.summary`.
 
 We demonstrate Approach #1 in this session and Approach #2 in the next session.
 
-Here we use the datasets from two metagenomics studies of colorectal cancer (CRC) [2] to demonstrate the use of each function. The `CRC_abd` is a list of sample-by-feature matrices of relative abundance counts of 267 species under order *Clostridiales* from the two studies. The `CRC_meta` is a data frame including the sample-level variables from these two studies. In particular, the following variables are in the `CRC_meta` data:
+Here, we use datasets from two metagenomic studies of colorectal cancer (CRC) [2] to demonstrate the usage of each function. CRC_abd is a list of sample-by-feature matrices containing the relative abundance counts of 267 species under the order Clostridiales from the two studies. CRC_meta is a data frame containing sample-level metadata from the same studies, including the following variables:
 
-* Sample identity: "Sample_ID"
+-   Sample identity: "Sample_ID"
 
-* Study name: "Study"
+-   Study name: "Study"
 
-* Disease status: "Group"
+-   Disease status: "Group"
 
 ```{r echo=TRUE}
 ## Load CRC data
@@ -77,7 +78,6 @@ data("CRC_data")
 CRC_abd <- CRC_data$CRC_abd
 CRC_meta <- CRC_data$CRC_meta
 ```
-
 
 ```{r echo=TRUE, message=TRUE, warning=FALSE}
 # Prepare input data
@@ -91,20 +91,28 @@ for(d in unique(CRC_meta$Study)){
 }
 
 # palm analysis
-meta.result <- palm(rel.abd = rel.abd, covariate.interest = covariate.interest, prev.filter = 0)
+meta.result <- PALM::palm(rel.abd = rel.abd, covariate.interest = covariate.interest, prev.filter = 0)
 ```
 
-The table below presents results for 20 microbial features, including overall association effect estimates, standard errors, p-values, and q-values for testing the overall effect; p-values and q-values for testing cross-study effect heterogeneity; and summary statistics (association effect estimates and standard errors) for individual studies.
+```{r echo=TRUE}
+# Caption
+caption_html <- tags$p(
+  tags$strong("Table 1. Summary of meta-analysis results for the top 20 microbial features."),
+  "The table displays, for each microbial feature, the overall association effect estimate, standard error, p-value, and q-value for testing the overall effect; the p-value and q-value for assessing cross-study heterogeneity; and the study-specific summary statistics (effect estimates and standard errors) from individual studies. All numerical values are rounded to four decimal places."
+)
 
-```{r}
-meta.result$disease %>% dplyr::slice(1:20) %>% 
-  mutate(across(where(is.numeric), ~ round(.x, digits = 4))) %>% 
+# Generate table
+tbl <- meta.result$disease %>%
+  dplyr::slice(1:20) %>%
+  dplyr::mutate(across(where(is.numeric), ~ round(.x, digits = 4))) %>%
   datatable()
+
+# Display caption + table
+tagList(caption_html, tbl)
 ```
 
-The figure below displays the features with $q$-value $≤ 0.05$. The dots in scatter plot represent the overall association effect estimates with lines indicating the 95% confidence intervals. The bar plot shows the $-\log_{10}(q\text{-value})$.
+```{r fig-meta, warning=FALSE, fig.align="center",fig.cap="Meta-analysis results for significant microbial features (q-value ≤ 0.05). The scatter plot displays the overall association effect estimates (dots) with corresponding 95% confidence intervals (lines) from the meta-analysis. Red and blue dots indicate positive and negative associations, respectively. The accompanying bar plot shows the statistical significance of each feature as the −log₁₀-transformed q-values, with the dashed line marking the 0.05 significance threshold."}
 
-```{r, warning=FALSE, fig.align="center"}
 ## summarize results
 palm.df <- meta.result$disease %>% dplyr::filter(qval <= 0.05) %>%
   dplyr::filter(coef > 0) %>% arrange(qval) %>%
@@ -161,143 +169,14 @@ df.scatter <- palm.df %>% ggplot(aes(x=feature, y=coef)) +
         legend.box = "vertical",
         strip.text = element_blank())
 
-## plot
-plot_grid(df.scatter, df.bar, nrow = 1, align = 'h',  rel_widths = c(0.73, 0.27))
+# Generate figure
+fig <- plot_grid(df.scatter, df.bar, nrow = 1, align = 'h', rel_widths = c(0.73, 0.27))
+print(fig)
 ```
 
-The figure below shows dots representing study-level association effect estimates with lines indicating the 95% confidence intervals. The PALM effect estimates show good consistency across studies.
 
-```{r, warning=FALSE, fig.align="center"}
-df.plot <- NULL
-df.area <- NULL
-for(l in palm.df$feature){
-    df.plot <- rbind(df.plot, tibble(feature = factor(l, levels = levels(palm.df$feature)), 
-                                     Study = c("FR-CRC", "DE-CRC"),
-                                     AA = c(meta.result$disease[meta.result$disease$feature == l, "FR-CRC_effect"],
-                                            meta.result$disease[meta.result$disease$feature == l, "DE-CRC_effect"]),
-                                     ci = 1.96 * c(meta.result$disease[meta.result$disease$feature == l, "FR-CRC_stderr"],
-                                                   meta.result$disease[meta.result$disease$feature == l, "DE-CRC_stderr"])))
-    if(meta.result$disease[meta.result$disease$feature == l, "qval.het"] <= 0.1){
-      df.area <- rbind(df.area, tibble(species = l, AA = 0))
-  }
-}
+```{r fig-PALM, fig.align="center", fig.cap="Study-specific PALM effect estimates and cross-study consistency. The figure displays study-level association effect estimates (dots) with corresponding 95% confidence intervals (lines) for each microbial feature. Yellow-shaded rows mark features with evidence of cross-study heterogeneity (q-value ≤ 0.1). The overall consistency of PALM effect estimates across studies, together with the homogeneity q-values, demonstrates the robustness of the method.", warning=FALSE}
 
-g.PALM <- df.plot %>% ggplot(aes(x = feature, y= AA)) +
-    geom_errorbar(aes(ymin = AA - ci, ymax = AA + ci, group = Study),
-                  position = position_dodge(width = 0.6),
-                  width = 0, linewidth = 0.5) +
-    geom_point(pch = 18, aes(color = Study),
-               size = 2.5, position = position_dodge(width = 0.6)) +
-    theme_minimal() + ylab("PALM\nCoefficients") +
-    coord_flip() +
-    geom_hline(aes(yintercept = 0),colour="#990000", linetype="dashed") +
-    ylim(-8, 4.5) +
-    theme(axis.title.y = element_text(size = 13),
-          axis.title.x = element_text(size = 13),
-          axis.ticks = element_blank(),
-          panel.grid = element_blank(),
-          panel.background = element_rect(fill=NULL, colour='black', linewidth = 1),
-          axis.text.y = element_text(size = 13),
-          axis.text.x = element_text(size = 13),
-          legend.title = element_text(hjust = 0.5, size = 16),
-          legend.text = element_text(size = 13),
-          legend.position = c(0.2, 0.85),
-          legend.direction = "vertical",
-          legend.box = "vertical",
-          strip.text = element_blank()) +
-    guides(color = guide_legend(reverse=T))
-
-if(!is.null(df.area)){
-  g.PALM <- g.PALM + geom_rect(data = df.area,
-                               aes(xmin = as.numeric(species) - 0.5,
-                                   xmax = as.numeric(species) + 0.5,
-                                   ymin = -Inf, ymax = Inf),
-                                   fill = "yellow", alpha = 0.2)
-}
-  
-g.PALM
-```
-
-The summary statistics correct for compositional effects by default using the median of the estimated values. Alternatively, you can set correct = "tune", which adjusts the compositional effect using a tuned value. This option often performs better when certain features dominate the average proportion or many significant features present.
-
-```{r}
-# palm analysis
-meta.result <- palm(rel.abd = rel.abd, covariate.interest = covariate.interest, prev.filter = 0, correct = "tune")
-```
-
-The table below presents results for 20 microbial features, including overall association effect estimates, standard errors, p-values, and q-values for testing the overall effect; p-values and q-values for testing cross-study effect heterogeneity; and summary statistics (association effect estimates and standard errors) for individual studies.
-
-```{r}
-meta.result$disease %>% dplyr::slice(1:20) %>% 
-  mutate(across(where(is.numeric), ~ round(.x, digits = 4))) %>% 
-  datatable()
-```
-
-The figure below displays the features with $q$-value $≤ 0.05$. The dots in scatter plot represent the overall association effect estimates with lines indicating the 95% confidence intervals. The bar plot shows the $-\log_{10}(q\text{-value})$.
-
-```{r, warning=FALSE, fig.align="center"}
-## summarize results
-palm.df <- meta.result$disease %>% dplyr::filter(qval <= 0.05) %>%
-  dplyr::filter(coef > 0) %>% arrange(qval) %>%
-  dplyr::add_row(meta.result$disease %>% dplyr::filter(qval <= 0.05) %>%
-  dplyr::filter(coef < 0) %>% arrange(desc(qval))) %>%
-  dplyr::transmute(feature = factor(feature, levels = feature), coef, stderr, qval, sig = (qval <= 0.05),
-                   dir = case_when(coef > 0 & qval <= 0.05 ~ "pos",
-                                   coef < 0 & qval <= 0.05 ~ "neg",
-                                   TRUE ~ "other")) %>% arrange(desc(row_number()))  
-
-## generate bar plot
-df.bar <- palm.df %>% ggplot(aes(x=feature, y=-log10(qval), fill= sig)) +
-      geom_bar(stat="identity") + ylim(0, 2.5) + scale_fill_manual(
-        breaks = c(TRUE, FALSE), values = c("grey50", "grey80")) +
-      geom_hline(aes(yintercept = -log10(0.05)),colour="#990000", linetype="dashed") +
-      theme_minimal() + coord_flip() + ylab("-log10 (q-value)") +
-         theme(axis.title.x = element_text(size = 10),
-               axis.title.y = element_blank(),
-               axis.ticks = element_blank(),
-               panel.grid = element_blank(),
-               plot.title = element_text(hjust = 0.5, size = 20),
-               panel.background = element_rect(fill=NULL, colour='black', linewidth = 1),
-               axis.text.y = element_blank(),
-               axis.text.x =  element_text(size = 10),
-               legend.title = element_text(hjust = 0.5, size = 16),
-               legend.text = element_text(size = 10),
-               legend.position = "none",
-               legend.direction = "vertical",
-               legend.box = "vertical",
-               strip.text = element_blank())
-
-## generate scatter plot
-df.scatter <- palm.df %>% ggplot(aes(x=feature, y=coef)) +
-      geom_errorbar(aes(ymin = coef - 1.96 * stderr, ymax = coef + 1.96 * stderr), color = "grey80",
-                    width = 0, linewidth = 0.5) +
-      geom_point(aes(color = dir), pch = 18, size = 2.5) + ylim(-3, 3) +
-      geom_hline(aes(yintercept = 0),colour="#990000", linetype="dashed") +
-      theme_minimal() + scale_color_manual(
-        breaks = c("pos", "other", "neg"),
-        values = c("red", "grey80", "blue")) +
-      coord_flip() + ylab("Meta Coefficients") +
-  theme(axis.title.x = element_text(size = 10),
-        axis.title.y = element_text(size = 10),
-        axis.ticks = element_blank(),
-        panel.grid = element_blank(),
-        plot.title = element_text(hjust = 0.5, size = 20),
-        panel.background = element_rect(fill=NULL, colour='black', linewidth = 1),
-        axis.text.y = element_text(size = 10),
-        axis.text.x =  element_text(size = 10),
-        legend.title = element_text(hjust = 0.5, size = 16),
-        legend.text = element_text(size = 10),
-        legend.position = "none",
-        legend.direction = "vertical",
-        legend.box = "vertical",
-        strip.text = element_blank())
-
-## plot
-plot_grid(df.scatter, df.bar, nrow = 1, align = 'h',  rel_widths = c(0.73, 0.27))
-```
-The figure below shows dots representing study-level association effect estimates with lines indicating the 95% confidence intervals. The PALM effect estimates show good consistency across studies.
-
-```{r, warning=FALSE, fig.align="center"}
 df.plot <- NULL
 df.area <- NULL
 for(l in palm.df$feature){
@@ -349,6 +228,7 @@ g.PALM
 ```
 
 # Meta-analysis given samples of one study at a time
+
 If the datasets of different studies live in different locations and cannot be conveniently shared among studies, we can first generate summary statistics for each study:
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
@@ -374,7 +254,8 @@ meta.result.2 <- palm.meta.summary(summary.stats = summary.stats.merge)
 The meta-analysis results generated in this way are identical to those from the previous session.
 
 # Meta-analysis of association scan for multiple covariates of interest
-Microbiome association studies can involve a large number of covariates of interest (e.g., omics variables). We show here how to  use PALM to meta-analyze eight microbiome-metabolome association studies [3]. In these eight studies, we have 101 genera and 450 metabolites and we are interested in identifying genera that are associated with individual metabolites. This analysis takes approximately 50 seconds.
+
+Microbiome association studies can involve a large number of covariates of interest (e.g., omics variables). We show here how to use PALM to meta-analyze eight microbiome-metabolome association studies [3]. In these eight studies, we have 101 genera and 450 metabolites and we are interested in identifying genera that are associated with individual metabolites. This analysis takes approximately 49 seconds.
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 ## Load metabolite data: 
@@ -397,24 +278,36 @@ summary.stat <- palm.get.summary(null.obj = null.obj, covariate.interest = cmpd_
 
 ## Meta-analysis
 meta.scan.result <- palm.meta.summary(summary.stats = summary.stat)
+
 ```
 
-The following shows the effect estimates of 20 microbial features for 5 metabolites.
 
 ```{r echo=TRUE}
+# Caption
+caption_html <- tags$p(
+  tags$strong("Table 2. Summary of meta-analysis results for the top 20 microbial features across five metabolites."),
+  "The table presents, for each microbial feature, the overall association effect estimate, standard error, p-value, and q-value for testing the overall effect; the p-value and q-value for assessing cross-study heterogeneity; and the study-specific summary statistics (effect estimates and standard errors) from individual studies. All numerical values are rounded to four decimal places."
+)
+
 meta.sum <- lapply(meta.scan.result, function(d){d %>% tibble::column_to_rownames("feature")})
 selected.num <- sort(unlist(lapply(meta.sum, function(d){sum(d$qval <= 0.05)})), decreasing = TRUE)
 top.cov.name <- names(selected.num)[1:min(5, length(selected.num))]
 coef_mat <- do.call(cbind, lapply(meta.sum[top.cov.name], function(d){d[,"coef",drop=FALSE]}))
 colnames(coef_mat) <- top.cov.name
-coef_mat %>% dplyr::slice(1:20) %>% 
+
+# Generate table
+tbl <- coef_mat %>% dplyr::slice(1:20) %>% 
   mutate(across(where(is.numeric), ~ round(.x, digits = 4))) %>% 
   datatable()
+
+# Display caption + table
+tagList(caption_html, tbl)
+
 ```
 
-The following figure displays the features associated with butyrate production with $q$-value $\leq 0.05$. The dots in scatter plot represent the overall association effect estimates with lines indicating the 95% confidence intervals. The bar plot shows the $-\log_{10}(q\text{-value})$.
 
-```{r, fig.width=8, fig.height=8, warning=FALSE, fig.align="center"}
+```{r, fig.width=8, fig.height=8, warning=FALSE, fig.align="center", fig.cap="Meta-analysis of microbial features associated with butyrate production. The scatter plot (left) displays the overall association effect estimates (dots) and their corresponding 95% confidence intervals (lines) for microbial features significantly associated with butyrate production (q ≤ 0.05). Red and blue points represent positive and negative associations, respectively. The accompanying bar plot (right) shows the statistical significance of each feature as the −log₁₀-transformed q-values, with the dashed line marking the 0.05 significance threshold."}
+
 palm.df <- meta.scan.result$HMDB0000039 %>% dplyr::filter(qval <= 0.05) %>%
   dplyr::filter(coef > 0) %>% arrange(qval) %>%
   dplyr::add_row(meta.scan.result$HMDB0000039 %>% dplyr::filter(qval <= 0.05) %>%
@@ -475,9 +368,8 @@ df.scatter <- palm.df %>% ggplot(aes(x=feature, y=coef)) +
 plot_grid(df.scatter, df.bar, nrow = 1, align = 'h',  rel_widths = c(0.62, 0.38))
 ```
 
-The following figure displays the features associated with butyrate production with $q$-value $\leq 0.05$. The dots in the scatter plot represent the study-level association effect estimates, and the lines indicate 95% confidence intervals. The PALM effect estimates show good consistency across studies.
 
-```{r, fig.width=6, fig.height=12, warning=FALSE, fig.align="center"}
+```{r, fig.width=6, fig.height=12, warning=FALSE, fig.align="center", fig.cap="Meta-analysis of study-level effect estimates for microbial features associated with butyrate production. Each point represents a study-level association effect estimate, and the horizontal lines indicate the corresponding 95% confidence intervals. The dashed horizontal line marks the null value (0). Yellow-shaded features indicate those with significant heterogeneity across studies (q-values ≤ 0.1).The overall consistency of PALM effect estimates across studies, together with the homogeneity q-values, demonstrates the robustness of the method."}
 ## summarize HMDB0000039 analysis
 PALM.df <- meta.scan.result$HMDB0000039 %>% dplyr::filter(qval <= 0.05) %>%
   dplyr::filter(coef > 0) %>% arrange(qval) %>%
@@ -544,8 +436,9 @@ sessionInfo()
 ```
 
 # Reference
-1. Wei et al. Fast and reliable association discovery in large-scale microbiome studies and meta-analyses using PALM. Submitted.
 
-2. Wirbel, Jakob et al. Meta-analysis of fecal metagenomes reveals global microbial features that are specific for colorectal cancer. 
+1.  Wei et al. Fast and reliable association discovery in large-scale microbiome studies and meta-analyses using PALM. Submitted.
 
-3. Muller, E., Algavi, Y.M. & Borenstein, E. The gut microbiome-metabolome dataset collection: a curated resource for integrative meta-analysis. npj Biofilms Microbiomes 8, 79 (2022).
+2.  Wirbel, Jakob et al. Meta-analysis of fecal metagenomes reveals global microbial features that are specific for colorectal cancer.
+
+3.  Muller, E., Algavi, Y.M. & Borenstein, E. The gut microbiome-metabolome dataset collection: a curated resource for integrative meta-analysis. npj Biofilms Microbiomes 8, 79 (2022).

@@ -238,9 +238,9 @@ palm.null.model <- function(rel.abd,
     rownames(Y_R) <- rownames(Y.sub)
 
     if(max(colMeans(rel.abd[[d]] / rowSums(rel.abd[[d]]))) >= 0.9){
-      reg.fit.one <- list(Y_I = Y_I, Y_R = Y_R, Z = X.sub, rm.sample.idx = rm.sample.idx[[d]], abd = TRUE)
+      reg.fit.one <- list(Y_I = Y_I, Y_R = Y_R, Z = X.sub, rm.sample.idx = rm.sample.idx[[d]], coef = est.single, abd = TRUE)
     }else{
-      reg.fit.one <- list(Y_I = Y_I, Y_R = Y_R, Z = X.sub, rm.sample.idx = rm.sample.idx[[d]], abd = FALSE)
+      reg.fit.one <- list(Y_I = Y_I, Y_R = Y_R, Z = X.sub, rm.sample.idx = rm.sample.idx[[d]], coef = est.single, abd = FALSE)
     }
 
     #=== output ===#

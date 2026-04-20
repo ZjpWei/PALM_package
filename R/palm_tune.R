@@ -844,7 +844,9 @@ search.ref.loc.gsec <- function(summary.stat.study,
   loop.range <- TRUE
   s.1.GIC <- -Inf
   s.2.GIC <- -Inf
+  loop_num <- 0
   while(loop.range){
+    loop_num <- loop_num + 1
     if(s.1.GIC < GIC.result){
       s.1.prop[study.l] <- max(s.1.prop[study.l] - initial.range / 2, 0)
       ref.quant <- cal.quantile(quantile_sm = quantile_sm, prop = s.1.prop)
@@ -862,6 +864,8 @@ search.ref.loc.gsec <- function(summary.stat.study,
     if(s.1.GIC > GIC.result & s.2.GIC > GIC.result){
       loop.range <- FALSE
     }else if(s.1.prop[study.l] == 0 | s.2.prop[study.l] == 1){
+      loop.range <- FALSE
+    }else if(loop_num >= 1e3){
       loop.range <- FALSE
     }
   }

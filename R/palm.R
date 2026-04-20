@@ -64,9 +64,15 @@
 #' If \code{"tune"}, the compositional effect is corrected using a data-driven tuned value.
 #' If \code{NULL}, no compositional correction is applied (i.e., the analysis uses relative-abundance summary
 #' statistics directly and outputs RA-level summary statistics).
+<<<<<<< HEAD
 #' Recommendation: For sparse signals (<= 20\% differential AA features), use \code{"median"}.
 #' For moderately dense signals (> 20\% and <= 50\%), \code{"tune"} tends to be more accurate.
 #' Both methods assume that the proportion of differential AA features is <= 50\%.
+=======
+#' Recommendation: For sparse signals (<= 20% differential AA features), use \code{"median"}.
+#' For moderately dense signals (> 20% and <= 50%), \code{"tune"} tends to be more accurate.
+#' Both methods assume that the proportion of differential AA features is <= 50%.
+>>>>>>> 8eebfe815d0ab06fe8332daa39bad3475f99f2e6
 #'
 #' @return
 #' A list containing one component for each covariate of interest.

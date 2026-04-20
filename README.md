@@ -21,7 +21,7 @@ The `PALM` package (version 0.1.0) should be compatible with Windows, Mac, and L
 
 Before setting up the package, users should have R version 4.3.0 or higher.
 
-The package depends on the following R packages: `Mass`, `dplyr`, `brglm2` and `Rcpp`.
+The package depends on the following R packages: `Mass`, `metafor`, `abess`, `dplyr`, `brglm2` and `Rcpp`.
 
 ## Installation guide
 

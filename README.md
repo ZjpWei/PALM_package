@@ -3,7 +3,7 @@
 `PALM` is a R package and it implements a quasi-Poisson-based framework designed for robust, scalable, and reproducible identification of covariate-associated microbial features in large-scale microbiome association studies and meta-analyses. The package can perform single-study association analysis and meta-analysis across multiple studies.
 See following items for more details:
 
-* [`PALM` Manual](https://github.com/ZjpWei/PALM_package/blob/main/doc/PALM_0.1.0.pdf).
+* [`PALM` Manual](https://github.com/ZjpWei/PALM_package/blob/main/doc/PALM_0.1.1.pdf).
 
 * [`PALM` Vignette](https://ZjpWei.github.io/PALM_package/PALM_vignette.html).
 
@@ -17,7 +17,7 @@ Department of Biostatistics and Medical Informatics, University of Wisconsin-Mad
 
 ## System requirements
 
-The `PALM` package (version 0.1.0) should be compatible with Windows, Mac, and Linux operating systems.
+The `PALM` package (version 0.1.1) should be compatible with Windows, Mac, and Linux operating systems.
 
 Before setting up the package, users should have R version 4.3.0 or higher.
 
@@ -30,14 +30,21 @@ Install package from github.
 devtools::install_github("ZjpWei/PALM_package")
 ```
 
-Install package by [source code](https://github.com/ZjpWei/PALM_package/blob/main/PALM_0.1.0.tar.gz)
+To reproduce the results of the PALM article, install version 0.1.0, the version
+the article used. Version 0.1.1 renames the argument `rel.abd` to `feature.counts`
+and otherwise gives the same results.
 ```{r}
-install.packages("./PALM_0.1.0.tar.gz", repos = NULL, type = "source")
+devtools::install_github("ZjpWei/PALM_package@v0.1.0")
+```
+
+Install package by [source code](https://github.com/ZjpWei/PALM_package/blob/main/PALM_0.1.1.tar.gz)
+```{r}
+install.packages("./PALM_0.1.1.tar.gz", repos = NULL, type = "source")
 ```
 
 ## Quick start guide
 
-The following are minimal examples on functionalities of `PALM`. For more detailes, please refer to its [vignette](https://htmlpreview.github.io/?https://github.com/ZjpWei/PALM_package/blob/main/doc/PALM_vignette.html).
+The following are minimal examples on functionalities of `PALM`. For more detailes, please refer to its [vignette](https://ZjpWei.github.io/PALM_package/PALM_vignette.html).
 
 * Load package and data
 ```{r}
@@ -47,10 +54,10 @@ CRC_abd <- CRC_data$CRC_abd
 CRC_meta <- CRC_data$CRC_meta
 
 ########## Generate summary statistics ##########
-rel.abd <- list()
+feature.counts <- list()
 covariate.interest <- list()
 for(d in unique(CRC_meta$Study)){
-  rel.abd[[d]] <- CRC_abd[CRC_meta$Sample_ID[CRC_meta$Study == d],]
+  feature.counts[[d]] <- CRC_abd[CRC_meta$Sample_ID[CRC_meta$Study == d],]
   disease <- as.numeric(CRC_meta$Group[CRC_meta$Study == d] == "CRC")
   names(disease) <- CRC_meta$Sample_ID[CRC_meta$Study == d]
   covariate.interest[[d]] <- matrix(disease, ncol = 1, dimnames = list(names(disease), "disease"))
@@ -59,7 +66,7 @@ for(d in unique(CRC_meta$Study)){
 
 * Perform meta-analysis
 ```{r}
-meta.result <- palm(rel.abd = rel.abd, covariate.interest = covariate.interest)
+meta.result <- palm(feature.counts = feature.counts, covariate.interest = covariate.interest)
 ```
 
 ## Issues tracker

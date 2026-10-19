@@ -32,38 +32,49 @@
 #' CRC_meta <- CRC_data$CRC_meta
 #'
 #' ########## Generate summary statistics ##########
-#' rel.abd <- list()
+#' feature.counts <- list()
 #' for (d in unique(CRC_meta$Study)) {
-#'   rel.abd[[d]] <- CRC_abd[CRC_meta$Sample_ID[CRC_meta$Study == d], ]
+#'   feature.counts[[d]] <- CRC_abd[CRC_meta$Sample_ID[CRC_meta$Study == d], ]
 #' }
 #'
-#' null.obj <- palm.null.model(rel.abd = rel.abd)
+#' null.obj <- palm.null.model(feature.counts = feature.counts)
 #' }
 
-palm.null.model <- function(rel.abd,
+palm.null.model <- function(feature.counts,
                             covariate.adjust = NULL,
                             depth = NULL,
                             depth.filter = 0,
-                            prev.filter = 0.1){
+                            prev.filter = 0.1,
+                            rel.abd){
+
+  ## `rel.abd` is the former name of `feature.counts`, kept so that code written
+  ## for earlier versions still runs.
+  if (!missing(rel.abd)) {
+    if (!missing(feature.counts))
+      stop("Supply `feature.counts` only; `rel.abd` is its deprecated former name.")
+    warning("`rel.abd` is deprecated; please use `feature.counts` instead.", call. = FALSE)
+    feature.counts <- rel.abd
+  }
+
 
   #=== Check input data ===#
-  if(is.matrix(rel.abd)){
-    rel.abd <- list("Study" = rel.abd)
+  if(is.matrix(feature.counts)){
+    feature.counts <- list("Study" = feature.counts)
     if(!is.null(covariate.adjust)){
       if(!is.data.frame(covariate.adjust)){
-        stop("rel.abd is a matrix, covariate.adjust should be a data frame.")
+        stop("feature.counts is a matrix, covariate.adjust should be a data frame.")
       }
     }
     if(!is.null(depth)){
       if(!is.vector(depth)){
-        stop("rel.abd is a matrix, depth should be a vector.")
+        stop("feature.counts is a matrix, depth should be a vector.")
       }
     }
     covariate.adjust <- list("Study" = covariate.adjust)
     depth <- list("Study" = depth)
   }
 
-  study.ID <- names(rel.abd)
+  study.ID <- names(feature.counts)
   if(is.null(study.ID)){
     stop("Please check the study name in rel.data.\n")
   }else{
@@ -74,32 +85,32 @@ palm.null.model <- function(rel.abd,
 
   #=== match rel.data and covariate.adjust ===#
   for(d in study.ID){
-    if(!all(!is.na(rel.abd[[d]]))){
+    if(!all(!is.na(feature.counts[[d]]))){
       stop("Detect NA in relative abundant counts.\n")
     }
-    if(min(rel.abd[[d]]) < 0){
+    if(min(feature.counts[[d]]) < 0){
       stop("Detect negative value in relative abundant counts.\n")
     }
     if(!is.null(covariate.adjust[[d]])){
       if(!is.data.frame(covariate.adjust[[d]])){
         stop("covariate.adjust is not a list of data frames.\n")
       }
-      if(nrow(covariate.adjust[[d]]) != nrow(rel.abd[[d]])){
-        stop("The sample size doesn't match between rel.abd and covariate.adjust, please check the input data.\n")
+      if(nrow(covariate.adjust[[d]]) != nrow(feature.counts[[d]])){
+        stop("The sample size doesn't match between feature.counts and covariate.adjust, please check the input data.\n")
       }else{
-        rownames(covariate.adjust[[d]]) <- rownames(rel.abd[[d]])
+        rownames(covariate.adjust[[d]]) <- rownames(feature.counts[[d]])
       }
       if(!all(!is.na(covariate.adjust[[d]]))){
         stop("Detect NA in covariate.adjust.\n")
       }
     }
     if(is.null(depth[[d]])){
-      depth[[d]] <- rowSums(rel.abd[[d]])
+      depth[[d]] <- rowSums(feature.counts[[d]])
     }else{
       if(!is.vector(depth[[d]])){
         stop(paste0("depth in study ", d, " is not a vector, please check the input data.\n"))
       }
-      if(length(depth[[d]]) != nrow(rel.abd[[d]])){
+      if(length(depth[[d]]) != nrow(feature.counts[[d]])){
         stop(paste0("The length of depth in study ", d, " doesn't match the dimension of input data.\n"))
       }
     }
@@ -110,7 +121,7 @@ palm.null.model <- function(rel.abd,
   for(d in study.ID){
     depth.kp <- which(depth[[d]] > depth.filter)
     rm.sample.idx[[d]] <- which(depth[[d]] <= depth.filter)
-    rel.abd[[d]] <- as.matrix(rel.abd[[d]][depth.kp,,drop=FALSE])
+    feature.counts[[d]] <- as.matrix(feature.counts[[d]][depth.kp,,drop=FALSE])
     depth[[d]] <- depth[[d]][depth.kp]
     if(!is.null(covariate.adjust[[d]])){
       covariate.adjust[[d]] <- covariate.adjust[[d]] %>% dplyr::slice(depth.kp)
@@ -120,7 +131,7 @@ palm.null.model <- function(rel.abd,
   #=== Match samples in relative abundant counts and sample data ===#
   data.relative <- list()
   for(d in study.ID){
-    Y.pool <- rel.abd[[d]]
+    Y.pool <- feature.counts[[d]]
 
     if(nrow(Y.pool) < 20){
       warning(paste0("Less than 20 samples in study ", d,
@@ -237,7 +248,7 @@ palm.null.model <- function(rel.abd,
     rownames(Y_I) <- rownames(Y.sub)
     rownames(Y_R) <- rownames(Y.sub)
 
-    if(max(colMeans(rel.abd[[d]] / rowSums(rel.abd[[d]]))) >= 0.9){
+    if(max(colMeans(feature.counts[[d]] / rowSums(feature.counts[[d]]))) >= 0.9){
       reg.fit.one <- list(Y_I = Y_I, Y_R = Y_R, Z = X.sub, rm.sample.idx = rm.sample.idx[[d]], coef = est.single, abd = TRUE)
     }else{
       reg.fit.one <- list(Y_I = Y_I, Y_R = Y_R, Z = X.sub, rm.sample.idx = rm.sample.idx[[d]], coef = est.single, abd = FALSE)

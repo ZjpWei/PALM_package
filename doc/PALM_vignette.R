@@ -26,17 +26,17 @@ CRC_meta <- CRC_data$CRC_meta
 
 ## ----echo=TRUE, message=TRUE, warning=FALSE-----------------------------------
 # Prepare input data
-rel.abd <- list()
+feature.counts <- list()
 covariate.interest <- list()
 for(d in unique(CRC_meta$Study)){
-  rel.abd[[d]] <- CRC_abd[CRC_meta$Sample_ID[CRC_meta$Study == d],]
+  feature.counts[[d]] <- CRC_abd[CRC_meta$Sample_ID[CRC_meta$Study == d],]
   disease <- as.numeric(CRC_meta$Group[CRC_meta$Study == d] == "CRC")
   names(disease) <- CRC_meta$Sample_ID[CRC_meta$Study == d]
   covariate.interest[[d]] <- matrix(disease, ncol = 1, dimnames = list(names(disease), "disease"))
 }
 
 # palm analysis
-meta.result <- PALM::palm(rel.abd = rel.abd, covariate.interest = covariate.interest, prev.filter = 0)
+meta.result <- PALM::palm(feature.counts = feature.counts, covariate.interest = covariate.interest, prev.filter = 0)
 
 ## ----echo=TRUE----------------------------------------------------------------
 # Caption
@@ -169,10 +169,10 @@ g.PALM
 
 ## ----echo=TRUE, message=FALSE, warning=FALSE----------------------------------
 ## Generate summary statistics for each study
-null.obj.FR <- palm.null.model(rel.abd = rel.abd$`FR-CRC`, prev.filter = 0)
+null.obj.FR <- palm.null.model(feature.counts = feature.counts$`FR-CRC`, prev.filter = 0)
 summary.stats.FR <- palm.get.summary(null.obj = null.obj.FR, covariate.interest = covariate.interest$`FR-CRC`)
 
-null.obj.DE <- palm.null.model(rel.abd = rel.abd$`DE-CRC`, prev.filter = 0)
+null.obj.DE <- palm.null.model(feature.counts = feature.counts$`DE-CRC`, prev.filter = 0)
 summary.stats.DE <- palm.get.summary(null.obj = null.obj.DE, covariate.interest = covariate.interest$`DE-CRC`)
 
 ## ----echo=TRUE, message=FALSE, warning=FALSE----------------------------------
@@ -196,7 +196,7 @@ for(d in names(otu_data_lst)){
 }
 
 ## Get null model
-null.obj <- palm.null.model(rel.abd = otu_data_lst, covariate.adjust = covariates_adjust_lst)
+null.obj <- palm.null.model(feature.counts = otu_data_lst, covariate.adjust = covariates_adjust_lst)
 
 ## Get summary statistics
 summary.stat <- palm.get.summary(null.obj = null.obj, covariate.interest = cmpd_data_lst,

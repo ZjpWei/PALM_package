@@ -5,11 +5,12 @@
 \title{Get information from the null model}
 \usage{
 palm.null.model(
-  rel.abd,
+  feature.counts,
   covariate.adjust = NULL,
   depth = NULL,
   depth.filter = 0,
-  prev.filter = 0.1
+  prev.filter = 0.1,
+  rel.abd
 )
 }
 \arguments{
@@ -37,12 +38,12 @@ CRC_abd <- CRC_data$CRC_abd
 CRC_meta <- CRC_data$CRC_meta
 
 ########## Generate summary statistics ##########
-rel.abd <- list()
+feature.counts <- list()
 for (d in unique(CRC_meta$Study)) {
-  rel.abd[[d]] <- CRC_abd[CRC_meta$Sample_ID[CRC_meta$Study == d], ]
+  feature.counts[[d]] <- CRC_abd[CRC_meta$Sample_ID[CRC_meta$Study == d], ]
 }
 
-null.obj <- palm.null.model(rel.abd = rel.abd)
+null.obj <- palm.null.model(feature.counts = feature.counts)
 }
 }
 \seealso{

@@ -9,7 +9,7 @@
 #' @param null.obj The output object from the \code{palm.null.model} function.
 #' @param ... Additional arguments passed to \code{palm}.
 #' In \code{covariate.interest} and \code{cluster}, the order of samples must match
-#' the order in \code{rel.abd} used in the \code{palm.null.model} function.
+#' the order in \code{feature.counts} used in the \code{palm.null.model} function.
 #'
 #' @return
 #' A list containing one component per study. Each component includes the following elements:
@@ -25,6 +25,7 @@
 #' \code{\link{palm}}
 #'
 #' @import dplyr Rcpp
+#' @useDynLib PALM, .registration = TRUE
 #' @export
 #'
 #' @examples
@@ -35,17 +36,17 @@
 #' CRC_meta <- CRC_data$CRC_meta
 #'
 #' ########## Generate summary statistics ##########
-#' rel.abd <- list()
+#' feature.counts <- list()
 #' covariate.interest <- list()
 #' for (d in unique(CRC_meta$Study)) {
-#'   rel.abd[[d]] <- CRC_abd[CRC_meta$Sample_ID[CRC_meta$Study == d], ]
+#'   feature.counts[[d]] <- CRC_abd[CRC_meta$Sample_ID[CRC_meta$Study == d], ]
 #'   disease <- as.numeric(CRC_meta$Group[CRC_meta$Study == d] == "CRC")
 #'   names(disease) <- CRC_meta$Sample_ID[CRC_meta$Study == d]
 #'   covariate.interest[[d]] <- matrix(disease, ncol = 1,
 #'                                     dimnames = list(names(disease), "disease"))
 #' }
 #'
-#' null.obj <- palm.null.model(rel.abd = rel.abd)
+#' null.obj <- palm.null.model(feature.counts = feature.counts)
 #' summary.stats <- palm.get.summary(null.obj = null.obj,
 #'                                   covariate.interest = covariate.interest)
 #' }

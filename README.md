@@ -34,7 +34,7 @@ To reproduce the results of the PALM article, install version 0.1.0, the version
 the article used. Version 0.1.1 renames the argument `rel.abd` to `feature.counts`
 and includes stability updates made after the 0.1.0 release.
 ```{r}
-devtools::install_github("ZjpWei/PALM_package@Package_v1")
+devtools::install_github("ZjpWei/PALM_package@Package_v2")
 ```
 
 Install package by [source code](https://github.com/ZjpWei/PALM_package/blob/main/PALM_0.1.1.tar.gz)
